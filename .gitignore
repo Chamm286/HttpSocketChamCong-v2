@@ -1,40 +1,35 @@
-# ── Compiled files ──
+﻿# Compiled bytecode
 bin/
 *.class
-*.jar
-!lib/*.jar
+out/
 
-# ── IDE / Editor ──
-.vscode/*
-!.vscode/settings.json
-!.vscode/launch.json
-!.vscode/extensions.json
+# IDE
 .idea/
+.vscode/
 *.iml
-*.swp
-*.swo
-*~
 
-# ── OS ──
+# OS files
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# ── Logs / Temp ──
+# Logs
 *.log
-logs/
-tmp/
-temp/
 
-# ── Test files ──
-test-request.txt
+# CSV exports (data test)
+chamcong_*.csv
+test.csv
+
+# File rác không tên
+0
+
+# JavaFX SDK (nặng ~50MB)
+lib/javafx-sdk-21.0.5/
+
+# Temp
+*.tmp
+*.bak
+
+# Test files
 TestHttp.java
-TestHttp.class
-
-# ── Database exports ──
-*.sql.bak
-backup.sql
-
-# ── Sensitive ──
-*.env
-secrets.properties
+test-request.txt

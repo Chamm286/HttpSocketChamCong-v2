@@ -2,18 +2,24 @@ package com.httpchamcong.server;
 
 import java.io.*;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Tự PARSE HTTP/1.1 REQUEST từ Socket InputStream.
  *
+ * ⭐ FIX BUG: Đọc body bằng byte[] thay vì char[] (giống Client).
+ * Vì Content-Length tính bằng BYTES, không phải CHARS.
+ * Với UTF-8 nhiều bytes (tiếng Việt), 1 char = 2-3 bytes
+ * → Đọc char[contentLength] sẽ block chờ đủ chars → timeout 15s.
+ *
  * Format HTTP/1.1 Request:
  *   POST /api/login HTTP/1.1              ← Request line
  *   Host: localhost:8080                  ← Headers
  *   Authorization: Bearer xxx
  *   Content-Length: 42
- *                                         ← Dòng trống (CRLF)
+ *                                          ← Dòng trống (CRLF)
  *   {"username":"abc","password":"123"}   ← Body
  */
 public class HttpRequestParser {
@@ -27,12 +33,29 @@ public class HttpRequestParser {
 
     public static HttpRequestParser parse(InputStream in) throws IOException {
         HttpRequestParser req = new HttpRequestParser();
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(in, "UTF-8"));
 
-        // ===== BƯỚC 1: REQUEST LINE =====
-        String requestLine = reader.readLine();
-        if (requestLine == null || requestLine.isEmpty()) return null;
+        // ============================================================
+        // ⭐ BƯỚC 1: Đọc RAW header (byte-by-byte đến \r\n\r\n)
+        // ============================================================
+        ByteArrayOutputStream headerBuf = new ByteArrayOutputStream();
+        int prev3 = 0, prev2 = 0, prev1 = 0, cur;
+        while ((cur = in.read()) != -1) {
+            headerBuf.write(cur);
+            if (prev3 == '\r' && prev2 == '\n' && prev1 == '\r' && cur == '\n') {
+                break;
+            }
+            prev3 = prev2;
+            prev2 = prev1;
+            prev1 = cur;
+            if (headerBuf.size() > 65536) break;  // safety max 64KB
+        }
+
+        String headerStr = new String(headerBuf.toByteArray(), StandardCharsets.UTF_8);
+        String[] headerLines = headerStr.split("\r\n");
+
+        // ===== BƯỚC 2: REQUEST LINE =====
+        String requestLine = headerLines.length > 0 ? headerLines[0] : "";
+        if (requestLine.isEmpty()) return null;
 
         String[] parts = requestLine.split(" ");
         if (parts.length < 3) return null;
@@ -55,10 +78,11 @@ public class HttpRequestParser {
             req.path = fullPath;
         }
 
-        // ===== BƯỚC 2: HEADERS =====
-        String line;
+        // ===== BƯỚC 3: HEADERS =====
         int contentLength = 0;
-        while ((line = reader.readLine()) != null && !line.isEmpty()) {
+        for (int i = 1; i < headerLines.length; i++) {
+            String line = headerLines[i];
+            if (line.isEmpty()) continue;
             int idx = line.indexOf(':');
             if (idx > 0) {
                 String k = line.substring(0, idx).trim();
@@ -66,22 +90,26 @@ public class HttpRequestParser {
                 req.headers.put(k, v);
 
                 if (k.equalsIgnoreCase("Content-Length")) {
-                    contentLength = Integer.parseInt(v);
+                    try { contentLength = Integer.parseInt(v); }
+                    catch (Exception e) { contentLength = 0; }
                 }
             }
         }
 
-        // ===== BƯỚC 3: BODY =====
+        // ============================================================
+        // ⭐ BƯỚC 4: BODY — FIX dùng byte[] thay vì char[]
+        // ============================================================
         if (contentLength > 0) {
-            char[] buf = new char[contentLength];
-            int read = 0;
-            while (read < contentLength) {
-                int r = reader.read(buf, read, contentLength - read);
+            byte[] buf = new byte[contentLength];
+            int totalRead = 0;
+            while (totalRead < contentLength) {
+                int r = in.read(buf, totalRead, contentLength - totalRead);
                 if (r == -1) break;
-                read += r;
+                totalRead += r;
             }
-            req.body = new String(buf, 0, read);
+            req.body = new String(buf, 0, totalRead, StandardCharsets.UTF_8);
         }
+
         return req;
     }
 
@@ -90,23 +118,24 @@ public class HttpRequestParser {
         catch (Exception e) { return s; }
     }
 
+    // ============ GETTERS ============
     public String getMethod() { return method; }
     public String getPath()   { return path; }
     public String getVersion(){ return version; }
     public Map<String, String> getHeaders() { return headers; }
     public Map<String, String> getParams()  { return params; }
-    public String getBody()   { return body; }
+    public String getBody()   { return body == null ? "" : body; }
 
     /** Lấy token từ header Authorization: Bearer xxx */
     public String getBearerToken() {
         String auth = headers.get("Authorization");
         if (auth == null) return null;
-        if (auth.startsWith("Bearer ")) return auth.substring(7);
-        return auth;
+        if (auth.startsWith("Bearer ")) return auth.substring(7).trim();
+        return auth.trim();
     }
 
     @Override
     public String toString() {
         return method + " " + path + " " + version;
     }
-} 
+}
