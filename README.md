@@ -72,13 +72,16 @@ Không có Tomcat / Jetty / Spring Boot / Nginx / Apache ở giữa.
 - 🗓️ Đăng ký / xóa **ca làm việc**
 - 📝 Lưu **ghi chú công việc** theo ngày
 - 🔑 Đổi mật khẩu
+- 📸 **FaceID mô phỏng + GPS** trước khi Check-in / Check-out
 
 ### 👑 Quản trị viên (ADMIN)
 
 - 🎁 Tất cả quyền của nhân viên
+- 📊 **Dashboard quản trị** realtime: Tổng nhân viên, Đi làm, Vắng, Đi muộn
 - 👥 Xem **bảng chấm công toàn công ty**, lọc theo nhân viên / ngày, xuất CSV
-- 🧑‍💼 **Quản lý nhân viên**: thêm, sửa vai trò, xóa tài khoản
-- ✅ **Duyệt / từ chối** đơn nghỉ phép
+- 🧑‍💼 **Quản lý nhân viên**: thêm, sửa vai trò, phòng ban, số điện thoại, xóa tài khoản
+- ✅ **Duyệt / từ chối** đơn nghỉ phép, đi muộn, công tác
+- 🛰️ **Giám sát Online / Offline**, IP, số request và hoạt động cuối
 - 📝 Xem ghi chú công việc của toàn bộ nhân viên
 
 ### 🖥️ Giao diện
@@ -86,6 +89,7 @@ Không có Tomcat / Jetty / Spring Boot / Nginx / Apache ở giữa.
 - 🌗 Web SPA responsive, có **dark mode**
 - 🎨 Thiết kế hiện đại: sidebar, hero, card, bảng dữ liệu, modal xác nhận, toast
 - 📱 Hoạt động tốt trên desktop, tablet và điện thoại
+- 🧾 Server Dashboard JavaFX có tab **Live JSON** hiển thị raw HTTP Response Body
 - 🖥️ Server Dashboard JavaFX (START/STOP, log realtime, clients) vẫn giữ nguyên
 
 ---
@@ -399,7 +403,7 @@ java --module-path "lib/javafx-sdk-21.0.5/lib" --add-modules javafx.controls,jav
 | `POST` | `/api/logout` | Đăng xuất | ✅ |
 | `GET` | `/api/ping` | Kiểm tra server | ❌ |
 | `GET` | `/api/attendance/today` | Trạng thái chấm công hôm nay (alias `/api/today`) | ✅ |
-| `POST` | `/api/checkin` | Chấm công vào | ✅ |
+| `POST` | `/api/checkin` | Chấm công vào, nhận `lat`, `lng`, `faceVerified`, `note` | ✅ |
 | `POST` | `/api/checkout` | Chấm công ra | ✅ |
 | `GET` | `/api/history` | Lịch sử chấm công (phân trang, lọc ngày/user) | ✅ |
 | `GET` | `/api/export/csv` | Xuất CSV | ✅ |
@@ -410,7 +414,10 @@ java --module-path "lib/javafx-sdk-21.0.5/lib" --add-modules javafx.controls,jav
 | `POST` | `/api/leaves` | Gửi đơn nghỉ phép | ✅ |
 | `GET` | `/api/leave-list` | Đơn nghỉ của chính mình | ✅ |
 | `DELETE` | `/api/leaves/{id}` | Hủy đơn đang chờ duyệt | ✅ |
-| `POST` | `/api/admin/leave/update` | Duyệt / từ chối đơn | ✅ ADMIN |
+| `POST` | `/api/admin/leave/update` | Duyệt / từ chối đơn (route cũ) | ✅ ADMIN |
+| `PUT` / `POST` | `/api/leave/approve` | Duyệt / từ chối đơn, body `{id, status}` | ✅ ADMIN |
+| `GET` | `/api/dashboard/stats` | Thống kê Tổng NV / Đi làm / Vắng / Đi muộn | ✅ ADMIN |
+| `GET` | `/api/admin/clients` | Giám sát Online / Offline, IP, request count | ✅ ADMIN |
 | `GET` | `/api/work-shifts/list` | Danh sách ca làm | ✅ |
 | `POST` | `/api/work-shifts/register` | Đăng ký ca | ✅ |
 | `DELETE` | `/api/work-shifts/{id}` | Xóa ca | ✅ |
@@ -451,7 +458,7 @@ Content-Type: application/json; charset=UTF-8
 Content-Length: 48
 Connection: close
 
-{"username":"chamnee","password":"Chamnee@2025"}
+{"username":"admin","password":"Admin@2025"}
 ```
 
 ### Ví dụ HTTP Response
@@ -464,7 +471,7 @@ Connection: close
 Content-Type: application/json; charset=UTF-8
 Content-Length: 145
 
-{"token":"a1b2c3d4-...","user":{"username":"chamnee","fullName":"Nguyễn Thị Bích Trâm","role":"ADMIN"}}
+{"token":"a1b2c3d4-...","user":{"username":"admin","fullName":"Nguyễn Duy Minh","role":"ADMIN","department":"Phòng Kỹ thuật","phone":"0901 234 567"}}
 ```
 
 ---
@@ -488,14 +495,17 @@ không TLS, mật khẩu chưa băm, session trong bộ nhớ chưa hết hạn,
 
 ## 🔑 Tài khoản demo
 
-| Username | Password | Vai trò | Họ tên |
-|----------|----------|---------|--------|
-| **chamnee** | `Chamnee@2025` | **ADMIN** | Nguyễn Thị Bích Trâm |
-| nhanvien1 | `Nhanvien1@` | USER | Nguyễn Văn An |
-| nhanvien2 | `Nhanvien2@` | USER | Trần Thị Bình |
-| nhanvien3 | `Nhanvien3@` | USER | Lê Hoàng Cường |
-| nhanvien4 | `Nhanvien4@` | USER | Phạm Thị Dung |
-| nhanvien5 | `Nhanvien5@` | USER | Võ Minh Đức |
+| Username | Password | Vai trò | Họ tên | Phòng ban |
+|----------|----------|---------|--------|-----------|
+| **admin** | `Admin@2025` | **ADMIN** | Nguyễn Duy Minh | Phòng Kỹ thuật |
+| pvkhai | `Nhanvien@2025` | USER | Phan Văn Khải | Phòng Kỹ thuật |
+| ttbtram | `Nhanvien@2025` | USER | Trần Thị Bích Trâm | Phòng Kinh doanh |
+| lhcuong | `Nhanvien@2025` | USER | Lê Hoàng Cường | Phòng Kỹ thuật |
+| ptdung | `Nhanvien@2025` | USER | Phạm Thị Dung | Phòng Nhân sự |
+| vmduc | `Nhanvien@2025` | USER | Võ Minh Đức | Phòng Chăm sóc khách hàng |
+
+> File `database/chamcong_db.sql` dùng `DROP DATABASE` để tạo lại dữ liệu sạch. Chạy lại file này sẽ xóa dữ liệu hiện có trong `chamcong_db`.
+> Hôm nay, `pvkhai` và `ptdung` chưa chấm công để tiện test luồng Check-in + FaceID + GPS trên web.
 
 ---
 

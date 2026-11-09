@@ -37,6 +37,12 @@ public class ServerApp extends Application {
     private Button startBtn;
     private Button stopBtn;
 
+    // ⭐ Live JSON — raw HTTP Response Body
+    private TextArea liveJsonArea;
+    private Label liveJsonMeta;
+    private CheckBox liveJsonAutoScroll;
+    private long lastLiveJsonId = 0;
+
     private TableView<ClientManager.ClientInfo> clientTable;
     private ObservableList<ClientManager.ClientInfo> clientList;
 
@@ -309,6 +315,9 @@ public class ServerApp extends Application {
         Tab logTab = new Tab("   📜 Live Log   ");
         logTab.setContent(buildLogPane());
 
+        Tab jsonTab = new Tab("   🧾 Live JSON   ");
+        jsonTab.setContent(buildLiveJsonPane());
+
         Tab epTab = new Tab("   🔌 Endpoints   ");
         epTab.setContent(buildEndpointPane());
 
@@ -321,7 +330,7 @@ public class ServerApp extends Application {
         Tab clientTab = new Tab("   👥 Clients   ");
         clientTab.setContent(buildClientTablePane());
 
-        tabs.getTabs().addAll(dashTab, reqTab, logTab, epTab, testerTab, settingsTab, clientTab);
+        tabs.getTabs().addAll(dashTab, reqTab, logTab, jsonTab, epTab, testerTab, settingsTab, clientTab);
 
         VBox centerPanel = new VBox(tabs);
         centerPanel.setPadding(new Insets(22));
@@ -831,7 +840,68 @@ public class ServerApp extends Application {
     }
 
     // ============================================================
-    // TAB 4: ENDPOINTS
+    // TAB 4: LIVE JSON
+    // ============================================================
+    private VBox buildLiveJsonPane() {
+        VBox box = new VBox(14);
+        box.setPadding(new Insets(24));
+
+        HBox headerRow = new HBox(12);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+
+        FontIcon icn = new FontIcon(FontAwesomeSolid.CODE);
+        icn.setIconSize(18);
+        icn.setIconColor(Color.web(C_ACCENT));
+
+        Label title = new Label("  Live JSON — Raw HTTP Response Body");
+        title.setGraphic(icn);
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        title.setTextFill(Color.web(C_TEXT));
+
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
+
+        liveJsonMeta = new Label("0 JSON responses");
+        liveJsonMeta.setStyle("-fx-text-fill: " + C_ACCENT + "; -fx-font-weight: bold; -fx-font-size: 12; -fx-background-color: #eff6ff; -fx-background-radius: 16; -fx-padding: 6 14 6 14; -fx-border-color: #bfdbfe; -fx-border-radius: 16; -fx-border-width: 1;");
+
+        liveJsonAutoScroll = new CheckBox("Auto scroll");
+        liveJsonAutoScroll.setSelected(true);
+        liveJsonAutoScroll.setTextFill(Color.web(C_TEXT2));
+        liveJsonAutoScroll.setStyle("-fx-font-size: 12;");
+
+        Button clearBtn = new Button("  Xóa");
+        FontIcon clearIcn = new FontIcon(FontAwesomeSolid.TRASH_ALT);
+        clearIcn.setIconSize(11);
+        clearIcn.setIconColor(Color.web(C_RED));
+        clearBtn.setGraphic(clearIcn);
+        clearBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
+        clearBtn.setStyle("-fx-background-color: #fef2f2; -fx-text-fill: " + C_RED + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 6 14 6 14; -fx-border-color: #fecaca; -fx-border-radius: 8; -fx-border-width: 1;");
+        clearBtn.setOnAction(e -> {
+            if (liveJsonArea != null) liveJsonArea.clear();
+            ServerStats.clearJsonTraces();
+            lastLiveJsonId = 0;
+        });
+
+        headerRow.getChildren().addAll(title, sp, liveJsonMeta, liveJsonAutoScroll, clearBtn);
+
+        Label hint = new Label("Mỗi response JSON của server được ghi lại nguyên văn tại đây — dùng để chụp ảnh báo cáo HTTP/1.1.");
+        hint.setStyle("-fx-text-fill: " + C_MUTED + "; -fx-font-size: 12;");
+
+        liveJsonArea = new TextArea();
+        liveJsonArea.setEditable(false);
+        liveJsonArea.setWrapText(false);
+        liveJsonArea.setStyle("-fx-font-family: 'Consolas', monospace; -fx-font-size: 12.5; " +
+            "-fx-control-inner-background: #0b1220; -fx-text-fill: #7dd3fc; " +
+            "-fx-background-radius: 12; -fx-border-color: " + C_BORDER + "; " +
+            "-fx-border-radius: 12; -fx-border-width: 1;");
+        VBox.setVgrow(liveJsonArea, Priority.ALWAYS);
+
+        box.getChildren().addAll(headerRow, hint, liveJsonArea);
+        return box;
+    }
+
+    // ============================================================
+    // TAB 5: ENDPOINTS
     // ============================================================
     private VBox buildEndpointPane() {
         VBox box = new VBox(18);
@@ -1635,6 +1705,33 @@ public class ServerApp extends Application {
                                     r.clientIp
                                 ));
                             }
+                        }
+                    }
+
+                    // Live JSON: nối các response JSON mới vào tab.
+                    if (liveJsonArea != null) {
+                        java.util.List<ServerStats.JsonTrace> traces = ServerStats.getJsonTraces();
+                        StringBuilder add = new StringBuilder();
+                        long newest = lastLiveJsonId;
+                        for (int i = traces.size() - 1; i >= 0; i--) {
+                            ServerStats.JsonTrace tr = traces.get(i);
+                            if (tr.id <= lastLiveJsonId) continue;
+                            add.append("┌─ ").append(tr.time).append("  ")
+                               .append(tr.method).append(" ").append(tr.path)
+                               .append("  ->  HTTP ").append(tr.status).append("\n")
+                               .append(tr.body).append("\n")
+                               .append("└────────────────────────────────────────────\n\n");
+                            newest = Math.max(newest, tr.id);
+                        }
+                        if (add.length() > 0) {
+                            liveJsonArea.appendText(add.toString());
+                            lastLiveJsonId = newest;
+                            if (liveJsonAutoScroll == null || liveJsonAutoScroll.isSelected()) {
+                                liveJsonArea.setScrollTop(Double.MAX_VALUE);
+                            }
+                        }
+                        if (liveJsonMeta != null) {
+                            liveJsonMeta.setText(traces.size() + " JSON responses");
                         }
                     }
 

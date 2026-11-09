@@ -7,30 +7,40 @@ import java.util.List;
 
 public class LeaveDAO {
 
+    private static String safeString(ResultSet rs, String column) {
+        try {
+            String v = rs.getString(column);
+            return v == null ? "" : v;
+        } catch (SQLException e) {
+            return "";
+        }
+    }
+
     private static LeaveRequest mapRow(ResultSet rs) throws SQLException {
-        String fn = "";
-        try { fn = rs.getString("full_name"); } catch (Exception e) {}
-        if (fn == null) fn = "";
         return new LeaveRequest(
             rs.getInt("id"),
             rs.getString("username"),
-            fn,
+            safeString(rs, "full_name"),
             rs.getDate("start_date").toString(),
             rs.getDate("end_date").toString(),
-            rs.getString("reason"),
-            rs.getString("status")
+            safeString(rs, "reason"),
+            safeString(rs, "status"),
+            safeString(rs, "leave_type")
         );
     }
 
     /** Thêm đơn xin nghỉ mới */
     public static boolean insert(LeaveRequest lr) {
-        String sql = "INSERT INTO leave_requests (username, start_date, end_date, reason) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO leave_requests " +
+                     "(username, start_date, end_date, reason, leave_type) " +
+                     "VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, lr.getUsername());
             ps.setDate(2, java.sql.Date.valueOf(lr.getStartDate()));
             ps.setDate(3, java.sql.Date.valueOf(lr.getEndDate()));
             ps.setString(4, lr.getReason());
+            ps.setString(5, lr.getLeaveType());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) { e.printStackTrace(); return false; }
     }
@@ -100,5 +110,4 @@ public class LeaveDAO {
             return ps.executeUpdate() > 0;
         } catch (SQLException e) { e.printStackTrace(); return false; }
     }
-
 }

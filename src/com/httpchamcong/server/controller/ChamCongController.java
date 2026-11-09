@@ -54,9 +54,26 @@ public class ChamCongController {
             return new HttpResponseBuilder().status(401)
                 .json("{\"error\":\"Chua dang nhap\"}");
 
+        // GPS + FaceID mô phỏng: client gửi lên, server lưu vết vào DB.
+        Double lat = JsonUtil.getDouble(req.getBody(), "lat");
+        if (lat == null) lat = JsonUtil.getDouble(req.getBody(), "checkinLat");
+        Double lng = JsonUtil.getDouble(req.getBody(), "lng");
+        if (lng == null) lng = JsonUtil.getDouble(req.getBody(), "checkinLng");
+        Boolean face = JsonUtil.getBoolean(req.getBody(), "faceVerified");
+        if (face == null) face = JsonUtil.getBoolean(req.getBody(), "checkin_face_verified");
+        boolean faceVerified = face != null && face;
+        String note = JsonUtil.getString(req.getBody(), "note");
+
+        if (lat != null && (lat < -90 || lat > 90))
+            return new HttpResponseBuilder().status(400)
+                .json("{\"error\":\"Vi do GPS khong hop le\"}");
+        if (lng != null && (lng < -180 || lng > 180))
+            return new HttpResponseBuilder().status(400)
+                .json("{\"error\":\"Kinh do GPS khong hop le\"}");
+
         // Giờ do server ghi nhận, client không gửi giờ lên.
         String time = LocalTime.now().format(TIME_FMT);
-        if (!ChamCongDAO.checkIn(u.getUsername(), time)) {
+        if (!ChamCongDAO.checkIn(u.getUsername(), time, lat, lng, faceVerified, note)) {
             return new HttpResponseBuilder().status(400)
                 .json("{\"error\":\"Hom nay da check-in roi\"}");
         }
@@ -67,7 +84,7 @@ public class ChamCongController {
                 .json("{\"error\":\"Khong doc duoc ban ghi vua tao\"}");
         }
 
-        return new HttpResponseBuilder().status(201) // 201 Created
+        return new HttpResponseBuilder().status(200)
             .json(attendanceJson(saved, "Check-in thanh cong", LocalTime.now()));
     }
 
@@ -131,6 +148,10 @@ public class ChamCongController {
           .append("\"date\":\"").append(JsonUtil.escape(date)).append("\",")
           .append("\"checkIn\":\"").append(JsonUtil.escape(checkIn)).append("\",")
           .append("\"checkOut\":\"").append(JsonUtil.escape(checkOut)).append("\",")
+          .append("\"checkinLat\":").append(c == null || c.getCheckinLat() == null ? "null" : c.getCheckinLat()).append(",")
+          .append("\"checkinLng\":").append(c == null || c.getCheckinLng() == null ? "null" : c.getCheckinLng()).append(",")
+          .append("\"checkinFaceVerified\":").append(c != null && c.isCheckinFaceVerified()).append(",")
+          .append("\"note\":\"").append(JsonUtil.escape(c == null ? "" : c.getNote())).append("\",")
           .append("\"status\":\"").append(status).append("\",")
           .append("\"workedMinutes\":").append(workedMinutes).append(",")
           .append("\"serverTime\":\"").append(JsonUtil.escape(now)).append("\"}");

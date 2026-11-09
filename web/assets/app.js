@@ -634,6 +634,12 @@ const ROUTES = {
     admin: true,
     render: root => renderNotes(root, true),
   },
+  'admin-monitor': {
+    title: 'Giám sát Online / Offline',
+    sub: 'Theo dõi kết nối và hoạt động của nhân viên',
+    admin: true,
+    render: renderAdminMonitor,
+  },
 };
 
 function navigate(page) {
@@ -804,6 +810,15 @@ function leaveStatusBadge(status) {
   return '<span class="badge warning">Chờ duyệt</span>';
 }
 
+function leaveTypeLabel(type) {
+  return ({ NGHI_PHEP: 'Nghỉ phép', DI_MUON: 'Đi muộn', CONG_TAC: 'Công tác' })[type] || type || 'Nghỉ phép';
+}
+
+function leaveTypeBadge(type) {
+  const cls = type === 'DI_MUON' ? 'warning' : type === 'CONG_TAC' ? 'info' : 'violet';
+  return `<span class="badge ${cls}">${esc(leaveTypeLabel(type))}</span>`;
+}
+
 function shiftLabel(type) {
   return ({ SANG: 'Ca sáng', CHIEU: 'Ca chiều', TOI: 'Ca tối' })[type] || type;
 }
@@ -892,6 +907,7 @@ function weekChart(rows, days = 7, large = false) {
    DASHBOARD
    ============================================================ */
 async function renderDashboard(root) {
+  if (state.user?.role === 'ADMIN') return renderAdminDashboard(root);
   const today = isoToday();
   const from = isoOf(new Date(serverNow().getFullYear(), serverNow().getMonth(), serverNow().getDate() - 6));
 
@@ -1016,8 +1032,243 @@ async function renderDashboard(root) {
 }
 
 /* ============================================================
-   ATTENDANCE
+   ADMIN DASHBOARD
    ============================================================ */
+async function renderAdminDashboard(root) {
+  const [stats, leaves, clients, attendance] = await Promise.all([
+    api('/api/dashboard/stats'),
+    api('/api/admin/leaves'),
+    api('/api/admin/clients'),
+    api('/api/admin/all'),
+  ]);
+
+  const pending = (leaves.data || []).filter(r => r.status === 'PENDING');
+  const staff = clients.data || [];
+  const online = staff.filter(c => c.status === 'ONLINE').length;
+  const rows = (attendance.data || []).slice(0, 10);
+  const today = stats.date || isoToday();
+
+  root.innerHTML = `
+    <section class="hero admin-hero">
+      <div>
+        <span class="eyebrow">${icon('shield', 'icon-sm')} Quản trị hệ thống · ${esc(weekdayName(today))}, ${esc(fmtDate(today))}</span>
+        <h2>Xin chào, ${esc(state.user.fullName || 'Quản trị viên')}!</h2>
+        <p>Tổng quan realtime toàn công ty. Duyệt đơn, theo dõi chấm công và giám sát nhân viên online.</p>
+        <div class="hero-meta">
+          <span class="hero-chip">${icon('users')} ${stats.totalEmployees} nhân viên</span>
+          <span class="hero-chip">${icon('check-circle')} ${stats.present} đi làm</span>
+          <span class="hero-chip">${icon('alert-triangle')} ${stats.pendingLeaves} đơn chờ duyệt</span>
+          <span class="hero-chip">${icon('activity')} ${online} online</span>
+        </div>
+      </div>
+      <div class="hero-side">
+        <span class="status-pill working">ADMIN</span>
+        <div>
+          <div class="hero-clock" data-clock>--:--:--</div>
+          <div class="hero-clock-sub">Giờ máy chủ</div>
+        </div>
+        <a class="btn btn-light" href="#/admin-monitor">${icon('activity')} Giám sát online</a>
+      </div>
+    </section>
+
+    <div class="stat-grid">
+      <div class="stat-card blue">
+        <div class="stat-top"><span class="stat-ic">${icon('users')}</span><span class="stat-label">Tổng nhân viên</span></div>
+        <div class="stat-value">${stats.totalEmployees}</div>
+        <div class="stat-foot">${stats.totalUsers} tài khoản hệ thống</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-top"><span class="stat-ic">${icon('check-circle')}</span><span class="stat-label">Đi làm hôm nay</span></div>
+        <div class="stat-value">${stats.present}</div>
+        <div class="stat-foot">${stats.attendanceRate}% tỉ lệ có mặt · ${stats.working} đang làm</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-top"><span class="stat-ic">${icon('coffee')}</span><span class="stat-label">Vắng / chưa chấm</span></div>
+        <div class="stat-value">${stats.absent}</div>
+        <div class="stat-foot">${stats.completed} đã hoàn thành hôm nay</div>
+      </div>
+      <div class="stat-card violet">
+        <div class="stat-top"><span class="stat-ic">${icon('alert-triangle')}</span><span class="stat-label">Đi muộn</span></div>
+        <div class="stat-value">${stats.late}</div>
+        <div class="stat-foot">${stats.pendingLeaves} đơn đang chờ duyệt</div>
+      </div>
+    </div>
+
+    <div class="dash-grid" style="margin-top:20px">
+      <section class="card card-pad">
+        <div class="card-head">
+          <div>
+            <div class="card-title-row">${icon('history')}<span class="card-title">Chấm công gần đây</span></div>
+            <div class="card-sub">Dữ liệu mới nhất toàn công ty</div>
+          </div>
+          <a class="btn btn-soft btn-sm" href="#/admin-attendance">Xem tất cả ${icon('arrow-right', 'icon-sm')}</a>
+        </div>
+        ${historyTable(rows, true)}
+      </section>
+
+      <div class="stack">
+        <section class="card card-pad">
+          <div class="card-head">
+            <div>
+              <div class="card-title-row">${icon('calendar')}<span class="card-title">Đơn chờ duyệt</span></div>
+              <div class="card-sub">${pending.length} đơn cần xử lý</div>
+            </div>
+            <a class="btn btn-soft btn-sm" href="#/admin-leaves">Mở trang duyệt</a>
+          </div>
+          ${pending.length ? pending.slice(0, 4).map(r => `
+            <div class="pending-row">
+              <div class="pending-main">
+                ${userCell(r)}
+                <div class="pending-meta">${leaveTypeBadge(r.leaveType)} <span>${esc(fmtDate(r.startDate))}</span></div>
+              </div>
+              <div class="table-actions">
+                <button type="button" class="icon-btn success" data-admin-approve="${r.id}" title="Duyệt">${icon('check')}</button>
+                <button type="button" class="icon-btn danger" data-admin-reject="${r.id}" title="Từ chối">${icon('x')}</button>
+              </div>
+            </div>`).join('') : emptyState('Không có đơn chờ', 'Tất cả đơn đã được xử lý.', 'check-circle')}
+        </section>
+
+        <section class="card card-pad">
+          <div class="card-head">
+            <div>
+              <div class="card-title-row">${icon('activity')}<span class="card-title">Giám sát Online</span></div>
+              <div class="card-sub">${online} online · ${Math.max(0, staff.length - online)} offline</div>
+            </div>
+            <a class="btn btn-soft btn-sm" href="#/admin-monitor">Chi tiết</a>
+          </div>
+          <div class="monitor-mini-list">
+            ${staff.slice(0, 5).map(c => `
+              <div class="monitor-mini">
+                ${userCell(c)}
+                <span class="monitor-status ${c.status === 'ONLINE' ? 'on' : 'off'}">
+                  <span class="monitor-dot"></span>${c.status === 'ONLINE' ? 'Online' : 'Offline'}
+                </span>
+              </div>`).join('') || emptyState('Chưa có dữ liệu', 'Chưa có nhân viên đăng nhập.', 'users')}
+          </div>
+        </section>
+      </div>
+    </div>`;
+
+  const resolveLeave = async (id, status) => {
+    try {
+      await api('/api/leave/approve', { method: 'PUT', body: { id: Number(id), status } });
+      toast(status === 'APPROVED' ? 'Đã duyệt đơn' : 'Đã từ chối đơn', '', 'success');
+      await renderAdminDashboard(root);
+    } catch (err) {
+      toast('Không cập nhật được', err.message, 'error');
+    }
+  };
+
+  $$('[data-admin-approve]', root).forEach(btn =>
+    btn.addEventListener('click', () => resolveLeave(btn.dataset.adminApprove, 'APPROVED')));
+  $$('[data-admin-reject]', root).forEach(btn =>
+    btn.addEventListener('click', () => resolveLeave(btn.dataset.adminReject, 'REJECTED')));
+}
+
+async function renderAdminMonitor(root) {
+  const data = await api('/api/admin/clients');
+  const rows = data.data || [];
+  const online = rows.filter(c => c.status === 'ONLINE').length;
+
+  root.innerHTML = `
+    <section class="card card-pad">
+      <div class="card-head">
+        <div>
+          <div class="card-title-row">${icon('activity')}<span class="card-title">Giám sát nhân viên Online / Offline</span></div>
+          <div class="card-sub">${rows.length} tài khoản · ${online} online · ${Math.max(0, rows.length - online)} offline</div>
+        </div>
+        <button type="button" class="btn btn-soft btn-sm" id="monitor-refresh">${icon('refresh')} Làm mới</button>
+      </div>
+      ${rows.length ? `
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Nhân viên</th><th>Phòng ban</th><th>Trạng thái</th><th>IP</th><th>Đăng nhập</th><th>Hoạt động cuối</th><th>Requests</th></tr></thead>
+          <tbody>
+            ${rows.map(c => `
+              <tr>
+                <td>${userCell(c)}</td>
+                <td>${esc(c.department || '—')}</td>
+                <td><span class="monitor-status ${c.status === 'ONLINE' ? 'on' : 'off'}"><span class="monitor-dot"></span>${c.status === 'ONLINE' ? 'Online' : 'Offline'}</span></td>
+                <td class="mono">${esc(c.ip || '—')}${c.port ? `:${c.port}` : ''}</td>
+                <td class="mono">${esc(c.loginTime || '—')}</td>
+                <td class="mono">${esc(c.lastActivity || '—')}</td>
+                <td>${c.requestCount || 0}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : emptyState('Chưa có dữ liệu', 'Chưa có nhân viên kết nối.', 'users')}
+    </section>`;
+
+  $('#monitor-refresh')?.addEventListener('click', () => renderAdminMonitor(root));
+}
+
+/* ============================================================
+   ATTENDANCE — FaceID mô phỏng + GPS
+   ============================================================ */
+function getGeo() {
+  const fallback = {
+    lat: 21.0278,
+    lng: 105.8342,
+    accuracy: 0,
+    source: 'demo',
+    error: '',
+  };
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve(fallback);
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve(fallback);
+    }, 5000);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve({
+          lat: Number(pos.coords.latitude.toFixed(6)),
+          lng: Number(pos.coords.longitude.toFixed(6)),
+          accuracy: Math.round(pos.coords.accuracy || 0),
+          source: 'gps',
+          error: '',
+        });
+      },
+      err => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve({ ...fallback, error: err?.message || 'Không lấy được GPS' });
+      },
+      { enableHighAccuracy: true, timeout: 4500, maximumAge: 30000 }
+    );
+  });
+}
+
+function faceScanMarkup(actionName) {
+  return `
+    <div class="face-scan">
+      <div class="face-frame">
+        <span class="face-corner tl"></span><span class="face-corner tr"></span>
+        <span class="face-corner bl"></span><span class="face-corner br"></span>
+        <div class="face-oval">${icon('user')}</div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="face-status" id="face-status">Đang quét khuôn mặt…</div>
+      <div class="face-progress"><span id="face-progress-bar"></span></div>
+      <div class="geo-chip" id="geo-info">${icon('info')} Đang lấy vị trí GPS tự động…</div>
+    </div>
+    <div class="metric-list" style="margin-top:14px">
+      <div class="metric-row"><span>Hành động</span><strong>${esc(actionName)}</strong></div>
+      <div class="metric-row"><span>Xác thực</span><strong>FaceID mô phỏng</strong></div>
+      <div class="metric-row"><span>Ghi nhận</span><strong>Server tự ghi giờ</strong></div>
+    </div>
+    <div class="field" style="margin-top:14px">
+      <label>Ghi chú (không bắt buộc)</label>
+      <div class="input-wrap"><input id="att-note" placeholder="VD: Đi muộn do kẹt xe…" /></div>
+    </div>`;
+}
+
 async function renderAttendance(root) {
   const today = isoToday();
 
@@ -1134,26 +1385,62 @@ async function renderAttendance(root) {
     btn.addEventListener('click', async () => {
       const isCheckIn = st !== 'WORKING';
       const actionName = isCheckIn ? 'CHECK-IN' : 'CHECK-OUT';
-      const ok = await openModal({
-        title: `Xác nhận ${actionName}`,
-        subtitle: 'Thao tác này sẽ được server ghi nhận ngay lập tức.',
+      const geoPromise = getGeo();
+      let geo = { lat: null, lng: null };
+      let faceVerified = false;
+
+      const modalPromise = openModal({
+        title: `FaceID & GPS — ${actionName}`,
+        subtitle: 'Camera mô phỏng xác thực khuôn mặt và lấy GPS trước khi gửi server.',
         iconName: isCheckIn ? 'login' : 'logout',
         tone: isCheckIn ? 'success' : 'warning',
-        confirmText: actionName,
-        body: `
-          <div class="metric-list">
-            <div class="metric-row"><span>Thời điểm hiện tại</span><strong class="mono" data-clock></strong></div>
-            <div class="metric-row"><span>Hành động</span><strong>${esc(actionName)}</strong></div>
-            <div class="metric-row"><span>Ghi nhận</span><strong>${isCheckIn ? 'Giờ vào' : 'Giờ ra'}</strong></div>
-          </div>
-          <p class="muted" style="margin-top:12px">Giờ chấm công do server quyết định, client không thể sửa.</p>`,
-        onConfirm: async () => {
-          const res = await api(isCheckIn ? '/api/checkin' : '/api/checkout', { method: 'POST', body: {} });
-          toast(isCheckIn ? 'Check-in thành công' : 'Check-out thành công', `Server ghi nhận lúc ${res.time}`, 'success');
+        confirmText: `Xác nhận khuôn mặt & ${actionName}`,
+        wide: true,
+        body: faceScanMarkup(actionName),
+        onConfirm: async modal => {
+          const g = await geoPromise;
+          geo = g;
+          if (!faceVerified) {
+            await new Promise(r => setTimeout(r, 900));
+            faceVerified = true;
+          }
+          const note = $('#att-note', modal)?.value.trim() || '';
+          const res = await api(isCheckIn ? '/api/checkin' : '/api/checkout', {
+            method: 'POST',
+            body: {
+              lat: g.lat,
+              lng: g.lng,
+              faceVerified: true,
+              note,
+            },
+          });
+          toast(
+            isCheckIn ? 'Check-in thành công' : 'Check-out thành công',
+            `FaceID OK · ${g.source === 'gps' ? 'GPS thật' : 'GPS mô phỏng'} · Server ghi nhận lúc ${res.time}`,
+            'success'
+          );
           renderRoute();
           return true;
         },
       });
+
+      setTimeout(() => {
+        const status = $('#face-status');
+        const progress = $('#face-progress-bar');
+        if (status) status.textContent = 'Đã xác thực khuôn mặt ✓';
+        if (progress) progress.style.width = '100%';
+        faceVerified = true;
+      }, 750);
+
+      geoPromise.then(g => {
+        const info = $('#geo-info');
+        if (!info) return;
+        const source = g.source === 'gps' ? 'GPS thật' : 'GPS mô phỏng';
+        const accuracy = g.source === 'gps' && g.accuracy ? ` · sai số ~${g.accuracy}m` : '';
+        info.innerHTML = `${icon('info')} ${source}: ${g.lat}, ${g.lng}${accuracy}`;
+      });
+
+      const ok = await modalPromise;
       if (!ok) return;
     });
   }
@@ -1406,6 +1693,13 @@ async function renderLeaves(root, adminMode) {
         <div class="form-grid">
           <div class="field"><label>Từ ngày</label><div class="input-wrap"><input type="date" id="leave-from" required /></div></div>
           <div class="field"><label>Đến ngày</label><div class="input-wrap"><input type="date" id="leave-to" required /></div></div>
+          <div class="field full"><label>Loại đơn</label><div class="input-wrap">
+            <select id="leave-type">
+              <option value="NGHI_PHEP">Nghỉ phép</option>
+              <option value="DI_MUON">Đi muộn</option>
+              <option value="CONG_TAC">Công tác</option>
+            </select>
+          </div></div>
           <div class="field full"><label>Lý do</label><textarea id="leave-reason" placeholder="Ví dụ: Việc gia đình, khám bệnh…"></textarea></div>
         </div>
         <div class="form-actions">
@@ -1434,11 +1728,12 @@ async function renderLeaves(root, adminMode) {
       e.preventDefault();
       const startDate = $('#leave-from').value;
       const endDate = $('#leave-to').value;
+      const leaveType = $('#leave-type').value;
       const reason = $('#leave-reason').value.trim();
       if (!startDate || !endDate) return toast('Thiếu thông tin', 'Chọn ngày bắt đầu và kết thúc.', 'error');
       if (endDate < startDate) return toast('Ngày không hợp lệ', 'Ngày kết thúc phải sau ngày bắt đầu.', 'error');
       try {
-        await api('/api/leaves', { method: 'POST', body: { startDate, endDate, reason } });
+        await api('/api/leaves', { method: 'POST', body: { startDate, endDate, leaveType, reason } });
         toast('Đã gửi đơn', 'Đơn xin nghỉ đang chờ duyệt.', 'success');
         $('#leave-reason').value = '';
         await loadLeaves();
@@ -1468,7 +1763,7 @@ async function renderLeaves(root, adminMode) {
           <thead>
             <tr>
               ${adminMode ? '<th>Nhân viên</th>' : ''}
-              <th>Từ ngày</th><th>Đến ngày</th><th>Lý do</th><th>Trạng thái</th>
+              <th>Loại đơn</th><th>Từ ngày</th><th>Đến ngày</th><th>Lý do</th><th>Trạng thái</th>
               <th class="text-right">Thao tác</th>
             </tr>
           </thead>
@@ -1476,6 +1771,7 @@ async function renderLeaves(root, adminMode) {
             ${rows.map(r => `
               <tr>
                 ${adminMode ? `<td>${userCell(r)}</td>` : ''}
+                <td>${leaveTypeBadge(r.leaveType)}</td>
                 <td class="strong nowrap">${esc(fmtDate(r.startDate))}</td>
                 <td class="nowrap">${esc(fmtDate(r.endDate))}</td>
                 <td>${esc(r.reason || '—')}</td>
@@ -1533,7 +1829,7 @@ async function renderLeaves(root, adminMode) {
     });
     if (!ok) return;
     try {
-      await api('/api/admin/leave/update', { method: 'POST', body: { id: Number(id), status } });
+      await api('/api/leave/approve', { method: 'PUT', body: { id: Number(id), status } });
       toast('Đã cập nhật đơn', '', 'success');
       await loadLeaves();
     } catch (err) {
@@ -1884,12 +2180,14 @@ async function renderAdminUsers(root) {
     body.innerHTML = `
       <div class="table-wrap">
         <table class="data">
-          <thead><tr><th>Nhân viên</th><th>Username</th><th>Vai trò</th><th class="text-right">Thao tác</th></tr></thead>
+          <thead><tr><th>Nhân viên</th><th>Username</th><th>Phòng ban</th><th>Số điện thoại</th><th>Vai trò</th><th class="text-right">Thao tác</th></tr></thead>
           <tbody>
             ${rows.map(u => `
               <tr>
                 <td>${userCell(u)}</td>
                 <td class="mono">@${esc(u.username)}</td>
+                <td>${esc(u.department || '—')}</td>
+                <td class="mono">${esc(u.phone || '—')}</td>
                 <td>${roleBadge(u.role)}</td>
                 <td>
                   <div class="table-actions">
@@ -1930,16 +2228,20 @@ async function renderAdminUsers(root) {
           <div class="field"><label>Username</label><div class="input-wrap"><input id="nu-username" placeholder="vd: nhanvien6" /></div></div>
           <div class="field"><label>Mật khẩu</label><div class="input-wrap"><input id="nu-password" type="password" placeholder="Tối thiểu 6 ký tự" /></div></div>
           <div class="field full"><label>Họ và tên</label><div class="input-wrap"><input id="nu-fullname" placeholder="Nguyễn Văn A" /></div></div>
+          <div class="field"><label>Phòng ban</label><div class="input-wrap"><input id="nu-department" placeholder="Phòng Kỹ thuật" /></div></div>
+          <div class="field"><label>Số điện thoại</label><div class="input-wrap"><input id="nu-phone" placeholder="0901 234 567" /></div></div>
           <div class="field full"><label>Vai trò</label><div class="input-wrap"><select id="nu-role"><option value="USER">Nhân viên</option><option value="ADMIN">Quản trị viên</option></select></div></div>
         </div>`,
       onConfirm: async modal => {
         const username = $('#nu-username', modal).value.trim();
         const password = $('#nu-password', modal).value;
         const fullName = $('#nu-fullname', modal).value.trim();
+        const department = $('#nu-department', modal).value.trim();
+        const phone = $('#nu-phone', modal).value.trim();
         const role = $('#nu-role', modal).value;
         if (!username || !password || !fullName) throw new Error('Nhập đầy đủ username, mật khẩu và họ tên.');
         if (password.length < 6) throw new Error('Mật khẩu cần ít nhất 6 ký tự.');
-        await api('/api/admin/user/add', { method: 'POST', body: { username, password, fullName, role } });
+        await api('/api/admin/user/add', { method: 'POST', body: { username, password, fullName, role, department, phone } });
         toast('Đã thêm nhân viên', `${fullName} (@${username})`, 'success');
         await load();
         return true;
@@ -1958,6 +2260,8 @@ async function renderAdminUsers(root) {
       wide: true,
       body: `
         <div class="field"><label>Họ và tên</label><div class="input-wrap"><input id="eu-fullname" value="${esc(u.fullName || '')}" /></div></div>
+        <div class="field"><label>Phòng ban</label><div class="input-wrap"><input id="eu-department" value="${esc(u.department || '')}" /></div></div>
+        <div class="field"><label>Số điện thoại</label><div class="input-wrap"><input id="eu-phone" value="${esc(u.phone || '')}" /></div></div>
         <div class="field"><label>Vai trò</label><div class="input-wrap">
           <select id="eu-role">
             <option value="USER" ${u.role === 'USER' ? 'selected' : ''}>Nhân viên</option>
@@ -1966,9 +2270,11 @@ async function renderAdminUsers(root) {
         </div></div>`,
       onConfirm: async modal => {
         const fullName = $('#eu-fullname', modal).value.trim();
+        const department = $('#eu-department', modal).value.trim();
+        const phone = $('#eu-phone', modal).value.trim();
         const role = $('#eu-role', modal).value;
         if (!fullName) throw new Error('Họ tên không được để trống.');
-        await api(`/api/admin/users/${encodeURIComponent(u.username)}`, { method: 'PATCH', body: { fullName, role } });
+        await api(`/api/admin/users/${encodeURIComponent(u.username)}`, { method: 'PATCH', body: { fullName, department, phone, role } });
         toast('Đã cập nhật', `@${u.username}`, 'success');
         await load();
         return true;

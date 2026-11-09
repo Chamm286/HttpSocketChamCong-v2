@@ -8,7 +8,6 @@ import java.util.List;
 public class UserDAO {
 
     /** Tìm user theo username + password (đăng nhập) */
-    /** Tim user theo username + password (dang nhap) */
     public static User findUser(String username, String password) {
         User u = findByUsername(username);
         if (u == null) {
@@ -22,6 +21,27 @@ public class UserDAO {
         return u;
     }
 
+    private static String safeString(ResultSet rs, String column) {
+        try {
+            String v = rs.getString(column);
+            return v == null ? "" : v;
+        } catch (SQLException e) {
+            return "";
+        }
+    }
+
+    private static User mapUser(ResultSet rs) throws SQLException {
+        return new User(
+            rs.getString("username"),
+            rs.getString("password"),
+            rs.getString("full_name"),
+            rs.getString("role"),
+            safeString(rs, "department"),
+            safeString(rs, "phone"),
+            safeString(rs, "avatar_url")
+        );
+    }
+
     /** Tìm user theo username */
     public static User findByUsername(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
@@ -29,14 +49,7 @@ public class UserDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return new User(
-                        rs.getString("username"),
-                        rs.getString("password"),
-                        rs.getString("full_name"),
-                        rs.getString("role")
-                    );
-                }
+                if (rs.next()) return mapUser(rs);
             }
         } catch (SQLException e) { e.printStackTrace(); }
         return null;
@@ -49,27 +62,25 @@ public class UserDAO {
         try (Connection conn = DBConnection.getConnection();
              Statement st = conn.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
-            while (rs.next()) {
-                list.add(new User(
-                    rs.getString("username"),
-                    rs.getString("password"),
-                    rs.getString("full_name"),
-                    rs.getString("role")
-                ));
-            }
+            while (rs.next()) list.add(mapUser(rs));
         } catch (SQLException e) { e.printStackTrace(); }
         return list;
     }
 
     /** Thêm user mới */
     public static boolean insert(User u) {
-        String sql = "INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO users " +
+                     "(username, password, full_name, role, department, phone, avatar_url) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, u.getUsername());
             ps.setString(2, u.getPassword());
             ps.setString(3, u.getFullName());
             ps.setString(4, u.getRole());
+            ps.setString(5, u.getDepartment());
+            ps.setString(6, u.getPhone());
+            ps.setString(7, u.getAvatarUrl());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) { e.printStackTrace(); return false; }
     }
@@ -85,14 +96,18 @@ public class UserDAO {
         } catch (SQLException e) { e.printStackTrace(); return false; }
     }
 
-    /** Cập nhật thông tin user (họ tên, role) */
+    /** Cập nhật đầy đủ thông tin user */
     public static boolean update(User u) {
-        String sql = "UPDATE users SET full_name = ?, role = ? WHERE username = ?";
+        String sql = "UPDATE users SET full_name = ?, role = ?, " +
+                     "department = ?, phone = ?, avatar_url = ? WHERE username = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, u.getFullName());
             ps.setString(2, u.getRole());
-            ps.setString(3, u.getUsername());
+            ps.setString(3, u.getDepartment());
+            ps.setString(4, u.getPhone());
+            ps.setString(5, u.getAvatarUrl());
+            ps.setString(6, u.getUsername());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) { e.printStackTrace(); return false; }
     }

@@ -123,6 +123,9 @@ server.logExternal("[HTTP] Parsing Request from " + clientInfo + " (OSI Layer 7 
                 // Cho Network Console lấy đúng request thô của check-in/check-out.
                 addRequestTrace(req, res);
 
+                // Tab Live JSON của Server Dashboard: lưu raw response body JSON.
+                captureJsonResponse(method, path, res);
+
                 // Quyết định Connection theo request, không hard-code close.
                 res.connection(keepAlive);
                 if (keepAlive) {
@@ -162,6 +165,18 @@ if (keepAlive) {
         } finally {
             ServerStats.clientDisconnected();
             server.logExternal("[" + threadName + "] - Dong: " + clientInfo);
+        }
+    }
+
+    /** Lưu response JSON thô để Server Dashboard hiển thị ở tab Live JSON. */
+    private void captureJsonResponse(String method, String path, HttpResponseBuilder res) {
+        try {
+            String contentType = res.getHeaders().get("Content-Type");
+            if (contentType != null && contentType.toLowerCase().contains("application/json")) {
+                ServerStats.recordJsonResponse(method, path, res.getStatusCode(), res.getBody());
+            }
+        } catch (Exception ignored) {
+            // Không để lỗi capture ảnh hưởng response chính.
         }
     }
 

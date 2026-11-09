@@ -278,7 +278,7 @@ public class ClientApp extends Application {
         userIcon.setIconSize(14);
         userIcon.setIconColor(Color.web(C_MUTED));
 
-        userField = new TextField("nhanvien2");
+        userField = new TextField("pvkhai");
         userField.setFont(Font.font("Segoe UI", 14));
         userField.setStyle("-fx-background-color: transparent; -fx-text-fill: " + C_TEXT + "; -fx-prompt-text-fill: " + C_PROMPT + "; -fx-highlight-fill: " + C_ACCENT + "; -fx-highlight-text-fill: white;");
         HBox.setHgrow(userField, Priority.ALWAYS);
@@ -299,7 +299,7 @@ public class ClientApp extends Application {
         passIcon.setIconColor(Color.web(C_MUTED));
 
         passField = new PasswordField();
-        passField.setText("Nhanvien2@");
+        passField.setText("Nhanvien@2025");
         passField.setFont(Font.font("Segoe UI", 14));
         passField.setStyle("-fx-background-color: transparent; -fx-text-fill: " + C_TEXT + "; -fx-prompt-text-fill: " + C_PROMPT + "; -fx-highlight-fill: " + C_ACCENT + "; -fx-highlight-text-fill: white;");
         HBox.setHgrow(passField, Priority.ALWAYS);
@@ -361,11 +361,11 @@ public class ClientApp extends Application {
         h1.setFont(Font.font("Segoe UI", FontWeight.BOLD, 10));
         h1.setTextFill(Color.web(C_MUTED));
 
-        Label h2 = new Label("👤 nhanvien1 / Nhanvien1@");
+        Label h2 = new Label("👤 pvkhai / Nhanvien@2025");
         h2.setFont(Font.font("Consolas", 11));
         h2.setTextFill(Color.web(C_MUTED));
 
-        Label h3 = new Label("👑 chamnee   / Chamnee@2025");
+        Label h3 = new Label("👑 admin  / Admin@2025");
         h3.setFont(Font.font("Consolas", 11));
         h3.setTextFill(Color.web(C_MUTED));
 

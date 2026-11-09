@@ -52,6 +52,30 @@ public class ServerStats {
         Collections.synchronizedList(new ArrayList<>());
     private static final int MAX_RECENT = 200;
 
+    // ⭐ Live JSON: raw HTTP Response Body gần nhất (phục vụ tab Live JSON)
+    public static class JsonTrace {
+        public final long id;
+        public final String time;
+        public final String method;
+        public final String path;
+        public final int status;
+        public final String body;
+
+        public JsonTrace(long id, String time, String method, String path, int status, String body) {
+            this.id = id;
+            this.time = time;
+            this.method = method;
+            this.path = path;
+            this.status = status;
+            this.body = body;
+        }
+    }
+
+    private static final List<JsonTrace> jsonTraces =
+        Collections.synchronizedList(new ArrayList<>());
+    private static final AtomicLong jsonTraceSeq = new AtomicLong(0);
+    private static final int MAX_JSON_TRACES = 50;
+
     // ⭐ Requests trong giây gần nhất (dùng cho LineChart)
     private static final List<Long> requestTimestamps =
         Collections.synchronizedList(new ArrayList<>());
@@ -135,6 +159,33 @@ public class ServerStats {
     public static List<RequestInfo> getRecentRequests() {
         synchronized (recentRequests) {
             return new ArrayList<>(recentRequests);
+        }
+    }
+
+    /** Ghi lại raw JSON response body để tab Live JSON hiển thị. */
+    public static void recordJsonResponse(String method, String path, int status, String body) {
+        if (body == null) body = "";
+        if (body.length() > 65536) body = body.substring(0, 65536) + "\n...[truncated]";
+        String time = java.time.LocalTime.now().format(
+            java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
+        synchronized (jsonTraces) {
+            jsonTraces.add(0, new JsonTrace(
+                jsonTraceSeq.incrementAndGet(), time, method, path, status, body));
+            while (jsonTraces.size() > MAX_JSON_TRACES) {
+                jsonTraces.remove(jsonTraces.size() - 1);
+            }
+        }
+    }
+
+    public static List<JsonTrace> getJsonTraces() {
+        synchronized (jsonTraces) {
+            return new ArrayList<>(jsonTraces);
+        }
+    }
+
+    public static void clearJsonTraces() {
+        synchronized (jsonTraces) {
+            jsonTraces.clear();
         }
     }
 

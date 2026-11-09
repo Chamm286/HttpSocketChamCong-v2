@@ -25,6 +25,10 @@ public class LeaveController {
         String startDate = JsonUtil.getString(req.getBody(), "startDate");
         String endDate = JsonUtil.getString(req.getBody(), "endDate");
         String reason = JsonUtil.getString(req.getBody(), "reason");
+        String leaveType = JsonUtil.getString(req.getBody(), "leaveType");
+        if (leaveType == null) leaveType = JsonUtil.getString(req.getBody(), "leave_type");
+        if (leaveType == null || leaveType.isEmpty()) leaveType = "NGHI_PHEP";
+        leaveType = leaveType.toUpperCase();
 
         if (startDate == null || endDate == null)
             return new HttpResponseBuilder().status(400)
@@ -38,7 +42,12 @@ public class LeaveController {
             return new HttpResponseBuilder().status(400)
                 .json("{\"error\":\"Ngay ket thuc phai sau hoac bang ngay bat dau\"}");
 
-        LeaveRequest lr = new LeaveRequest(u.getUsername(), startDate, endDate, reason);
+        if (!"NGHI_PHEP".equals(leaveType) && !"DI_MUON".equals(leaveType)
+                && !"CONG_TAC".equals(leaveType))
+            return new HttpResponseBuilder().status(400)
+                .json("{\"error\":\"leaveType phai la NGHI_PHEP, DI_MUON hoac CONG_TAC\"}");
+
+        LeaveRequest lr = new LeaveRequest(u.getUsername(), startDate, endDate, reason, leaveType);
         boolean ok = LeaveDAO.insert(lr);
 
         if (!ok)
@@ -79,7 +88,10 @@ public class LeaveController {
     public HttpResponseBuilder updateStatus(HttpRequestParser req) {
         String token = req.getBearerToken();
         User u = SessionManager.getUser(token);
-        if (u == null || !"ADMIN".equals(u.getRole()))
+        if (u == null)
+            return new HttpResponseBuilder().status(401)
+                .json("{\"error\":\"Chua dang nhap\"}");
+        if (!"ADMIN".equals(u.getRole()))
             return new HttpResponseBuilder().status(403)
                 .json("{\"error\":\"Khong co quyen\"}");
 

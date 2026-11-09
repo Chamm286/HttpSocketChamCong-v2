@@ -18,6 +18,7 @@ public class Router {
     private final WorkShiftController workShiftCtrl = new WorkShiftController();
     private final NoteController noteCtrl = new NoteController();  
     private final FileController fileCtrl = new FileController(); 
+    private final DashboardController dashboardCtrl = new DashboardController();
 
     public HttpResponseBuilder handle(HttpRequestParser req) {
         String path = req.getPath();
@@ -30,7 +31,7 @@ public class Router {
         if ("OPTIONS".equals(method)) {
             return new HttpResponseBuilder()
                 .status(204)
-                .header("Allow", "GET, HEAD, POST, PATCH, DELETE, OPTIONS")
+                .header("Allow", "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS")
                 .body("");
         }
 
@@ -227,6 +228,23 @@ public class Router {
                 case "/api/admin/leaves":
                     if (!"GET".equals(method)) return methodNotAllowed("GET");
                     return leaveCtrl.all(req);
+
+                // DASHBOARD + GIÁM SÁT
+                case "/api/dashboard/stats":
+                case "/api/admin/dashboard/stats":
+                    if (!"GET".equals(method)) return methodNotAllowed("GET");
+                    return dashboardCtrl.stats(req);
+
+                case "/api/admin/clients":
+                case "/api/admin/monitor":
+                    if (!"GET".equals(method)) return methodNotAllowed("GET");
+                    return admin.monitor(req);
+
+                // DUYỆT ĐƠN — API mới theo yêu cầu đồ án
+                case "/api/leave/approve":
+                    if (!"PUT".equals(method) && !"POST".equals(method))
+                        return methodNotAllowed("PUT, POST");
+                    return leaveCtrl.updateStatus(req);
 
                 default:
                     return new HttpResponseBuilder().status(404)
