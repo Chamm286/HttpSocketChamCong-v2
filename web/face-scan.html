@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FaceID Scan — Chamnee Attendance</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/assets/app.css" />
+  <style>
+    body.face-page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(45, 212, 191, .16), transparent 42%),
+        radial-gradient(circle at 80% 90%, rgba(14, 165, 233, .14), transparent 46%),
+        #06101f;
+    }
+    .face-page-card {
+      width: min(560px, 100%);
+      border-radius: 24px;
+      padding: 22px;
+      background: rgba(8, 20, 38, .92);
+      border: 1px solid rgba(56, 189, 248, .22);
+      box-shadow: 0 30px 80px rgba(2, 6, 23, .42);
+      color: #e2e8f0;
+    }
+    .face-page-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .face-page-logo {
+      width: 46px; height: 46px; border-radius: 14px;
+      display: grid; place-items: center;
+      background: linear-gradient(135deg, #0ea5e9, #2dd4bf);
+      color: #06101f; font-weight: 900; font-size: 18px;
+    }
+    .face-page-head h1 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+    .face-page-head p { margin: 3px 0 0; color: #94a3b8; font-size: 12px; }
+    .face-page-action {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 10px; border-radius: 999px;
+      color: #7dd3fc; background: rgba(14, 165, 233, .12);
+      border: 1px solid rgba(56, 189, 248, .35);
+      font-size: 11px; font-weight: 800; letter-spacing: .06em;
+    }
+    .face-page-tip {
+      margin-top: 12px; padding: 10px 12px; border-radius: 12px;
+      color: #cbd5e1; background: rgba(15, 23, 42, .62);
+      border: 1px solid rgba(148, 163, 184, .16);
+      font-size: 12px; line-height: 1.5;
+    }
+    .face-page-tip strong { color: #f8fafc; }
+    .face-page-foot { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .face-page-foot small { color: #64748b; font-size: 11px; }
+  </style>
+</head>
+<body class="face-page">
+  <main class="face-page-card">
+    <div class="face-page-head">
+      <div class="face-page-logo">CC</div>
+      <div style="flex:1">
+        <h1>FaceID Camera Scan</h1>
+        <p>Desktop Client · camera thật · blink liveness · descriptor 128D</p>
+      </div>
+      <span class="face-page-action" id="scan-action">CHECKIN</span>
+    </div>
+
+    <div class="face-scan face-scan-live">
+      <div class="face-stage">
+        <video id="face-video" class="face-video" autoplay playsinline muted></video>
+        <canvas id="face-overlay" class="face-overlay"></canvas>
+        <div class="face-frame">
+          <span class="face-corner tl"></span><span class="face-corner tr"></span>
+          <span class="face-corner bl"></span><span class="face-corner br"></span>
+          <div class="face-oval"></div>
+          <div class="scan-line"></div>
+        </div>
+        <div class="face-live-badge"><span class="live-dot"></span> CAMERA LIVE</div>
+        <div class="face-loading" id="face-loading"><span class="spinner"></span> Đang khởi động camera…</div>
+      </div>
+      <div class="face-status-row">
+        <div class="face-status" id="face-status">Đang kết nối phiên FaceID…</div>
+        <button type="button" class="btn btn-ghost btn-sm" id="face-retry" hidden>Quét lại</button>
+      </div>
+      <div class="face-progress"><span id="face-progress-bar"></span></div>
+      <div class="face-steps">
+        <span class="face-step" data-step="detect">1 · Khuôn mặt</span>
+        <span class="face-step" data-step="blink">2 · Chớp mắt</span>
+        <span class="face-step" data-step="match">3 · So khớp</span>
+      </div>
+    </div>
+
+    <div class="face-page-tip">
+      <strong>Hướng dẫn:</strong> nhìn thẳng vào camera, đưa khuôn mặt vào giữa khung và
+      <strong>chớp mắt một lần</strong>. Hệ thống sẽ tự khóa mẫu, so khớp với dữ liệu đã đăng ký
+      và gửi kết quả về Desktop Client.
+    </div>
+
+    <div class="face-page-foot">
+      <small id="scan-meta">Session: —</small>
+      <button type="button" class="btn btn-ghost btn-sm" id="close-page">Đóng trang</button>
+    </div>
+  </main>
+
+  <script src="/assets/vendor/face-api.min.js"></script>
+  <script src="/assets/face-engine.js"></script>
+  <script src="/assets/face-scan.js"></script>
+</body>
+</html>

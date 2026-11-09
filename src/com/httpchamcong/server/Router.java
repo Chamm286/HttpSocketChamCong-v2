@@ -19,6 +19,7 @@ public class Router {
     private final NoteController noteCtrl = new NoteController();  
     private final FileController fileCtrl = new FileController(); 
     private final DashboardController dashboardCtrl = new DashboardController();
+    private final FaceController faceCtrl = new FaceController();
 
     public HttpResponseBuilder handle(HttpRequestParser req) {
         String path = req.getPath();
@@ -117,6 +118,39 @@ public class Router {
                 case "/api/ping":
                     if (!"GET".equals(method)) return methodNotAllowed("GET");
                     return handlePing();
+
+                // FACEID — camera thật + challenge/token một lần
+                case "/api/face/status":
+                    if (!"GET".equals(method)) return methodNotAllowed("GET");
+                    return faceCtrl.status(req);
+
+                case "/api/face/challenge":
+                    if (!"POST".equals(method)) return methodNotAllowed("POST");
+                    return faceCtrl.challenge(req);
+
+                case "/api/face/verify":
+                    if (!"POST".equals(method)) return methodNotAllowed("POST");
+                    return faceCtrl.verify(req);
+
+                case "/api/face/reset":
+                    if (!"POST".equals(method)) return methodNotAllowed("POST");
+                    return faceCtrl.reset(req);
+
+                case "/api/face/desktop/start":
+                    if (!"POST".equals(method)) return methodNotAllowed("POST");
+                    return faceCtrl.desktopStart(req);
+
+                case "/api/face/desktop/context":
+                    if (!"GET".equals(method)) return methodNotAllowed("GET");
+                    return faceCtrl.desktopContext(req);
+
+                case "/api/face/desktop/verify":
+                    if (!"POST".equals(method)) return methodNotAllowed("POST");
+                    return faceCtrl.desktopVerify(req);
+
+                case "/api/face/desktop/result":
+                    if (!"GET".equals(method)) return methodNotAllowed("GET");
+                    return faceCtrl.desktopResult(req);
 
                 // CHẤM CÔNG
                 case "/api/checkin":

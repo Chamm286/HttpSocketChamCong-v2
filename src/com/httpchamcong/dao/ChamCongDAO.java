@@ -46,6 +46,11 @@ public class ChamCongDAO {
             safeDouble(rs, "checkin_lat"),
             safeDouble(rs, "checkin_lng"),
             safeBoolean(rs, "checkin_face_verified"),
+            safeDouble(rs, "checkin_face_score"),
+            safeDouble(rs, "checkin_liveness"),
+            safeBoolean(rs, "checkout_face_verified"),
+            safeDouble(rs, "checkout_face_score"),
+            safeDouble(rs, "checkout_liveness"),
             safeString(rs, "note")
         );
     }
@@ -94,15 +99,22 @@ public class ChamCongDAO {
     }
 
     public static boolean checkIn(String username, String time) {
-        return checkIn(username, time, null, null, false, "");
+        return checkIn(username, time, null, null, false, null, null, "");
     }
 
     public static boolean checkIn(String username, String time, Double lat, Double lng,
                                   boolean faceVerified, String note) {
+        return checkIn(username, time, lat, lng, faceVerified, null, null, note);
+    }
+
+    public static boolean checkIn(String username, String time, Double lat, Double lng,
+                                  boolean faceVerified, Double faceScore, Double liveness,
+                                  String note) {
         if (findToday(username) != null) return false;
         String sql = "INSERT INTO chamcong " +
                      "(username, work_date, check_in, checkin_lat, checkin_lng, " +
-                     "checkin_face_verified, note) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                     "checkin_face_verified, checkin_face_score, checkin_liveness, note) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -111,7 +123,9 @@ public class ChamCongDAO {
             if (lat == null) ps.setNull(4, Types.DOUBLE); else ps.setDouble(4, lat);
             if (lng == null) ps.setNull(5, Types.DOUBLE); else ps.setDouble(5, lng);
             ps.setBoolean(6, faceVerified);
-            ps.setString(7, note == null ? "" : note);
+            if (faceScore == null) ps.setNull(7, Types.DOUBLE); else ps.setDouble(7, faceScore);
+            if (liveness == null) ps.setNull(8, Types.DOUBLE); else ps.setDouble(8, liveness);
+            ps.setString(9, note == null ? "" : note);
             return ps.executeUpdate() > 0;
         } catch (SQLIntegrityConstraintViolationException duplicate) {
             // Hai request check-in đồng thời: khóa chính (username, work_date) chặn request sau.
@@ -123,15 +137,24 @@ public class ChamCongDAO {
     }
 
     public static boolean checkOut(String username, String time) {
+        return checkOut(username, time, false, null, null);
+    }
+
+    public static boolean checkOut(String username, String time, boolean faceVerified,
+                                   Double faceScore, Double liveness) {
         ChamCong today = findToday(username);
         if (today == null || today.getCheckOut() != null) return false;
-        String sql = "UPDATE chamcong SET check_out = ? " +
+        String sql = "UPDATE chamcong SET check_out = ?, checkout_face_verified = ?, " +
+                     "checkout_face_score = ?, checkout_liveness = ? " +
                      "WHERE username = ? AND work_date = ? AND check_out IS NULL";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setTime(1, java.sql.Time.valueOf(time));
-            ps.setString(2, username);
-            ps.setDate(3, java.sql.Date.valueOf(LocalDate.now()));
+            ps.setBoolean(2, faceVerified);
+            if (faceScore == null) ps.setNull(3, Types.DOUBLE); else ps.setDouble(3, faceScore);
+            if (liveness == null) ps.setNull(4, Types.DOUBLE); else ps.setDouble(4, liveness);
+            ps.setString(5, username);
+            ps.setDate(6, java.sql.Date.valueOf(LocalDate.now()));
             return ps.executeUpdate() > 0;
         } catch (SQLException e) { e.printStackTrace(); return false; }
     }

@@ -195,6 +195,7 @@ function openModal({
   wide = false,
   hideCancel = false,
   onConfirm = null,
+  onClose = null,
 }) {
   return new Promise(resolve => {
     const root = $('#modal-root');
@@ -227,6 +228,7 @@ function openModal({
     const close = value => {
       if (done) return;
       done = true;
+      try { onClose?.(value); } catch (e) { console.warn(e); }
       root.innerHTML = '';
       document.removeEventListener('keydown', onKey);
       resolve(value);
@@ -597,11 +599,19 @@ function historyTable(rows, showUser) {
             <th>Giờ ra</th>
             <th>Thời gian</th>
             <th>Trạng thái</th>
+            <th>FaceID</th>
           </tr>
         </thead>
         <tbody>
           ${rows.map(row => {
             const done = row.checkOut ? workedMinutes(row.checkIn, row.checkOut) : null;
+            const inScore = row.checkinFaceScore != null
+              ? `<span class="badge success">In ${Math.round(row.checkinFaceScore * 100)}%</span>` : '';
+            const outScore = row.checkoutFaceScore != null
+              ? `<span class="badge success">Out ${Math.round(row.checkoutFaceScore * 100)}%</span>` : '';
+            const faceCell = row.checkinFaceVerified || row.checkoutFaceVerified
+              ? `<div class="face-badges">${inScore}${outScore}</div>`
+              : '<span class="muted">—</span>';
             return `
               <tr>
                 ${showUser ? `<td>${userCell(row)}</td>` : ''}
@@ -610,6 +620,7 @@ function historyTable(rows, showUser) {
                 <td class="mono nowrap">${row.checkOut ? esc(row.checkOut) : '—'}</td>
                 <td class="nowrap">${done === null ? '<span class="muted">Đang tính…</span>' : esc(fmtDuration(done))}</td>
                 <td>${rowStatusBadge(row)}</td>
+                <td>${faceCell}</td>
               </tr>`;
           }).join('')}
         </tbody>
@@ -954,11 +965,11 @@ async function renderAdminMonitor(root) {
    ============================================================ */
 function getGeo() {
   const fallback = {
-    lat: 21.0278,
-    lng: 105.8342,
+    lat: null,
+    lng: null,
     accuracy: 0,
-    source: 'demo',
-    error: '',
+    source: 'none',
+    error: 'Trình duyệt không hỗ trợ GPS',
   };
   return new Promise(resolve => {
     if (!navigator.geolocation) return resolve(fallback);
@@ -994,21 +1005,35 @@ function getGeo() {
 
 function faceScanMarkup(actionName) {
   return `
-    <div class="face-scan">
-      <div class="face-frame">
-        <span class="face-corner tl"></span><span class="face-corner tr"></span>
-        <span class="face-corner bl"></span><span class="face-corner br"></span>
-        <div class="face-oval">${icon('user')}</div>
-        <div class="scan-line"></div>
+    <div class="face-scan face-scan-live">
+      <div class="face-stage">
+        <video id="face-video" class="face-video" autoplay playsinline muted></video>
+        <canvas id="face-overlay" class="face-overlay"></canvas>
+        <div class="face-frame">
+          <span class="face-corner tl"></span><span class="face-corner tr"></span>
+          <span class="face-corner bl"></span><span class="face-corner br"></span>
+          <div class="face-oval"></div>
+          <div class="scan-line"></div>
+        </div>
+        <div class="face-live-badge"><span class="live-dot"></span> CAMERA LIVE</div>
+        <div class="face-loading" id="face-loading"><span class="spinner"></span> Đang khởi động camera…</div>
       </div>
-      <div class="face-status" id="face-status">Đang quét khuôn mặt…</div>
+      <div class="face-status-row">
+        <div class="face-status" id="face-status">Đang mở camera và tải model FaceID…</div>
+        <button type="button" class="btn btn-ghost btn-sm" id="face-retry" hidden>Quét lại</button>
+      </div>
       <div class="face-progress"><span id="face-progress-bar"></span></div>
-      <div class="geo-chip" id="geo-info">${icon('info')} Đang lấy vị trí GPS tự động…</div>
+      <div class="face-steps">
+        <span class="face-step" data-step="detect">1 · Khuôn mặt</span>
+        <span class="face-step" data-step="blink">2 · Chớp mắt</span>
+        <span class="face-step" data-step="match">3 · So khớp</span>
+      </div>
+      <div class="geo-chip" id="geo-info">${icon('info')} Đang lấy vị trí GPS…</div>
     </div>
     <div class="metric-list" style="margin-top:14px">
       <div class="metric-row"><span>Hành động</span><strong>${esc(actionName)}</strong></div>
-      <div class="metric-row"><span>Xác thực</span><strong>FaceID mô phỏng</strong></div>
-      <div class="metric-row"><span>Ghi nhận</span><strong>Server tự ghi giờ</strong></div>
+      <div class="metric-row"><span>Xác thực</span><strong id="face-engine-state">Camera thật + blink liveness</strong></div>
+      <div class="metric-row"><span>Ghi nhận</span><strong>Server tự ghi giờ &amp; xác thực faceToken</strong></div>
     </div>
     <div class="field" style="margin-top:14px">
       <label>Ghi chú (không bắt buộc)</label>
@@ -1132,24 +1157,30 @@ async function renderAttendance(root) {
     btn.addEventListener('click', async () => {
       const isCheckIn = st !== 'WORKING';
       const actionName = isCheckIn ? 'CHECK-IN' : 'CHECK-OUT';
+      const actionCode = isCheckIn ? 'CHECKIN' : 'CHECKOUT';
       const geoPromise = getGeo();
-      let geo = { lat: null, lng: null };
-      let faceVerified = false;
+
+      let scanner = null;
+      let challengeId = '';
+      let faceToken = '';
+      let closed = false;
 
       const modalPromise = openModal({
         title: `FaceID & GPS — ${actionName}`,
-        subtitle: 'Camera mô phỏng xác thực khuôn mặt và lấy GPS trước khi gửi server.',
+        subtitle: 'Camera thật, phát hiện khuôn mặt, blink liveness và server tự so khớp trước khi chấm công.',
         iconName: isCheckIn ? 'login' : 'logout',
         tone: isCheckIn ? 'success' : 'warning',
-        confirmText: `Xác nhận khuôn mặt & ${actionName}`,
+        confirmText: `Xác nhận ${actionName}`,
         wide: true,
         body: faceScanMarkup(actionName),
+        onClose: () => {
+          closed = true;
+          try { scanner?.stop(); } catch (e) {}
+        },
         onConfirm: async modal => {
           const g = await geoPromise;
-          geo = g;
-          if (!faceVerified) {
-            await new Promise(r => setTimeout(r, 900));
-            faceVerified = true;
+          if (!faceToken) {
+            throw new Error('Chưa có faceToken. Hãy hoàn tất quét khuôn mặt và blink.');
           }
           const note = $('#att-note', modal)?.value.trim() || '';
           const res = await api(isCheckIn ? '/api/checkin' : '/api/checkout', {
@@ -1157,13 +1188,13 @@ async function renderAttendance(root) {
             body: {
               lat: g.lat,
               lng: g.lng,
-              faceVerified: true,
+              faceToken,
               note,
             },
           });
           toast(
             isCheckIn ? 'Check-in thành công' : 'Check-out thành công',
-            `FaceID OK · ${g.source === 'gps' ? 'GPS thật' : 'GPS mô phỏng'} · Server ghi nhận lúc ${res.time}`,
+            `FaceID server xác thực · ${g.source === 'gps' ? 'GPS thật' : 'Không có GPS'} · Server ghi nhận lúc ${res.time}`,
             'success'
           );
           renderRoute();
@@ -1171,24 +1202,146 @@ async function renderAttendance(root) {
         },
       });
 
-      setTimeout(() => {
-        const status = $('#face-status');
-        const progress = $('#face-progress-bar');
-        if (status) status.textContent = 'Đã xác thực khuôn mặt ✓';
-        if (progress) progress.style.width = '100%';
-        faceVerified = true;
-      }, 750);
+      const root = $('#modal-root');
+      const confirmBtn = $('.modal-confirm', root);
+      const retryBtn = $('#face-retry', root);
+      const loading = $('#face-loading', root);
+
+      const statusEl = () => $('#face-status', root);
+      const barEl = () => $('#face-progress-bar', root);
+      const setStatus = (text, tone = '') => {
+        const el = statusEl();
+        if (!el) return;
+        el.textContent = text;
+        el.dataset.tone = tone;
+      };
+      const setProgress = p => {
+        const bar = barEl();
+        if (bar) bar.style.width = Math.max(0, Math.min(100, p)) + '%';
+        const detect = $('[data-step="detect"]', root);
+        const blink = $('[data-step="blink"]', root);
+        const match = $('[data-step="match"]', root);
+        if (detect && blink && match) {
+          detect.classList.toggle('active', p >= 18 && p < 62);
+          detect.classList.toggle('done', p >= 62);
+          blink.classList.toggle('active', p >= 38 && p < 82);
+          blink.classList.toggle('done', p >= 82);
+          match.classList.toggle('active', p >= 82 && p < 100);
+          match.classList.toggle('done', p >= 100);
+        }
+      };
+      const setConfirm = (enabled, text) => {
+        if (!confirmBtn) return;
+        confirmBtn.disabled = !enabled;
+        confirmBtn.textContent = text || `Xác nhận ${actionName}`;
+      };
+      const showError = err => {
+        const message = err?.message || String(err || 'FaceID thất bại');
+        setStatus(message, 'error');
+        setProgress(0);
+        setConfirm(false, 'Chưa xác thực FaceID');
+        if (retryBtn) retryBtn.hidden = false;
+        if (loading) loading.hidden = true;
+        try { scanner?.stop(); } catch (e) {}
+        scanner = null;
+      };
+
+      setConfirm(false, 'Đang quét FaceID...');
 
       geoPromise.then(g => {
-        const info = $('#geo-info');
+        const info = $('#geo-info', root);
         if (!info) return;
-        const source = g.source === 'gps' ? 'GPS thật' : 'GPS mô phỏng';
+        const source = g.source === 'gps' ? 'GPS thật' : 'Không lấy được GPS';
+        const coords = g.lat != null ? `${g.lat}, ${g.lng}` : '—';
         const accuracy = g.source === 'gps' && g.accuracy ? ` · sai số ~${g.accuracy}m` : '';
-        info.innerHTML = `${icon('info')} ${source}: ${g.lat}, ${g.lng}${accuracy}`;
+        info.innerHTML = `${icon('info')} ${source}: ${coords}${accuracy}`;
       });
 
-      const ok = await modalPromise;
-      if (!ok) return;
+      const startScan = async () => {
+        if (closed) return;
+        faceToken = '';
+        challengeId = '';
+        setConfirm(false, 'Đang quét FaceID...');
+        setProgress(6);
+        setStatus('Đang xin challenge và mở camera...');
+        if (retryBtn) retryBtn.hidden = true;
+
+        try {
+          const ch = await api('/api/face/challenge', {
+            method: 'POST',
+            body: { action: actionCode },
+          });
+          challengeId = ch.challengeId;
+          if (closed) return;
+
+          if (!window.FaceEngine) {
+            throw new Error('Thiếu face-engine.js hoặc face-api.js trên trang');
+          }
+
+          scanner = new FaceEngine.FaceScanner({
+            video: $('#face-video', root),
+            overlay: $('#face-overlay', root),
+            onStatus: text => {
+              if (!closed) setStatus(text);
+            },
+            onProgress: p => {
+              if (!closed) setProgress(p);
+            },
+            onError: err => {
+              if (!closed) showError(err);
+            },
+            onReady: async payload => {
+              if (closed) return;
+              setProgress(90);
+              setStatus('Khuôn mặt hợp lệ — server đang so khớp descriptor...');
+              try {
+                const res = await api('/api/face/verify', {
+                  method: 'POST',
+                  body: {
+                    challengeId,
+                    action: actionCode,
+                    descriptor: payload.descriptor,
+                    livenessScore: payload.livenessScore,
+                    detectionScore: payload.detectionScore,
+                    image: payload.image,
+                  },
+                });
+                if (closed) return;
+                faceToken = res.faceToken;
+                try { scanner?.stop(); } catch (e) {}
+                setProgress(100);
+                setStatus(
+                  res.enrolled
+                    ? 'Đã đăng ký khuôn mặt lần đầu · FaceID hợp lệ'
+                    : `FaceID hợp lệ · độ khớp ${Math.round((res.score || 0) * 100)}% · liveness ${Math.round((res.liveness || 0) * 100)}%`,
+                  'success'
+                );
+                if (loading) loading.hidden = true;
+                setConfirm(true, `Xác nhận ${actionName}`);
+                if (res.enrolled) {
+                  toast('Đã đăng ký FaceID', 'Lần quét đầu tiên đã lưu mẫu khuôn mặt của bạn.', 'info');
+                }
+              } catch (err) {
+                showError(err);
+              }
+            },
+          });
+
+          await scanner.start();
+          if (!closed && loading) loading.hidden = true;
+          if (!closed) setStatus('Camera đã sẵn sàng — nhìn thẳng và chớp mắt.');
+        } catch (err) {
+          if (!closed) showError(err);
+        }
+      };
+
+      retryBtn?.addEventListener('click', () => {
+        setProgress(6);
+        startScan();
+      });
+
+      setTimeout(startScan, 80);
+      await modalPromise;
     });
   }
 }

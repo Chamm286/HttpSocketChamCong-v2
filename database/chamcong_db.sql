@@ -32,17 +32,40 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 2. CHẤM CÔNG — có GPS + FaceID mô phỏng
+-- 1.1. FACE PROFILE — mẫu sinh trắc học FaceID (128 chiều)
+-- ============================================================
+CREATE TABLE face_profiles (
+    username         VARCHAR(50) NOT NULL,
+    descriptor       TEXT        NOT NULL,
+    image_data       MEDIUMTEXT  NULL,
+    liveness_score   DOUBLE      NULL,
+    enrolled_at      TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_verified_at TIMESTAMP   NULL,
+    PRIMARY KEY (username),
+    CONSTRAINT fk_face_user
+        FOREIGN KEY (username) REFERENCES users(username)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 2. CHẤM CÔNG — GPS + FaceID thật (camera + liveness)
 -- ============================================================
 CREATE TABLE chamcong (
-    username             VARCHAR(50) NOT NULL,
-    work_date            DATE        NOT NULL,
-    check_in             TIME        NULL,
-    check_out            TIME        NULL,
-    checkin_lat          DOUBLE      NULL,
-    checkin_lng          DOUBLE      NULL,
-    checkin_face_verified TINYINT(1) NOT NULL DEFAULT 0,
-    note                 VARCHAR(255) NULL,
+    username              VARCHAR(50) NOT NULL,
+    work_date             DATE        NOT NULL,
+    check_in              TIME        NULL,
+    check_out             TIME        NULL,
+    checkin_lat           DOUBLE      NULL,
+    checkin_lng           DOUBLE      NULL,
+    checkin_face_verified TINYINT(1)  NOT NULL DEFAULT 0,
+    checkin_face_score    DOUBLE      NULL,
+    checkin_face_image    MEDIUMTEXT  NULL,
+    checkin_liveness      DOUBLE      NULL,
+    checkout_face_verified TINYINT(1) NOT NULL DEFAULT 0,
+    checkout_face_score   DOUBLE      NULL,
+    checkout_face_image   MEDIUMTEXT  NULL,
+    checkout_liveness     DOUBLE      NULL,
+    note                  VARCHAR(255) NULL,
     PRIMARY KEY (username, work_date),
     CONSTRAINT fk_chamcong_user
         FOREIGN KEY (username) REFERENCES users(username)

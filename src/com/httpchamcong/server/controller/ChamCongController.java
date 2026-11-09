@@ -3,6 +3,7 @@ package com.httpchamcong.server.controller;
 import com.httpchamcong.dao.ChamCongDAO;
 import com.httpchamcong.model.ChamCong;
 import com.httpchamcong.model.User;
+import com.httpchamcong.server.FaceAuthStore;
 import com.httpchamcong.server.HttpRequestParser;
 import com.httpchamcong.server.HttpResponseBuilder;
 import com.httpchamcong.util.JsonUtil;
@@ -54,15 +55,21 @@ public class ChamCongController {
             return new HttpResponseBuilder().status(401)
                 .json("{\"error\":\"Chua dang nhap\"}");
 
-        // GPS + FaceID mô phỏng: client gửi lên, server lưu vết vào DB.
+        // GPS lấy từ trình duyệt; FaceID chỉ được chấp nhận qua faceToken do
+        // /api/face/verify cấp. Server không tin cờ faceVerified do client gửi.
         Double lat = JsonUtil.getDouble(req.getBody(), "lat");
         if (lat == null) lat = JsonUtil.getDouble(req.getBody(), "checkinLat");
         Double lng = JsonUtil.getDouble(req.getBody(), "lng");
         if (lng == null) lng = JsonUtil.getDouble(req.getBody(), "checkinLng");
-        Boolean face = JsonUtil.getBoolean(req.getBody(), "faceVerified");
-        if (face == null) face = JsonUtil.getBoolean(req.getBody(), "checkin_face_verified");
-        boolean faceVerified = face != null && face;
         String note = JsonUtil.getString(req.getBody(), "note");
+        String faceToken = JsonUtil.getString(req.getBody(), "faceToken");
+
+        FaceAuthStore.Proof proof =
+            FaceAuthStore.consumeToken(u.getUsername(), "CHECKIN", faceToken);
+        if (proof == null) {
+            return new HttpResponseBuilder().status(400)
+                .json("{\"error\":\"Can xac thuc FaceID truoc khi check-in\"}");
+        }
 
         if (lat != null && (lat < -90 || lat > 90))
             return new HttpResponseBuilder().status(400)
@@ -73,7 +80,8 @@ public class ChamCongController {
 
         // Giờ do server ghi nhận, client không gửi giờ lên.
         String time = LocalTime.now().format(TIME_FMT);
-        if (!ChamCongDAO.checkIn(u.getUsername(), time, lat, lng, faceVerified, note)) {
+        if (!ChamCongDAO.checkIn(u.getUsername(), time, lat, lng, true,
+                proof.score, proof.liveness, note)) {
             return new HttpResponseBuilder().status(400)
                 .json("{\"error\":\"Hom nay da check-in roi\"}");
         }
@@ -101,8 +109,17 @@ public class ChamCongController {
             return new HttpResponseBuilder().status(401)
                 .json("{\"error\":\"Chua dang nhap\"}");
 
+        String faceToken = JsonUtil.getString(req.getBody(), "faceToken");
+        FaceAuthStore.Proof proof =
+            FaceAuthStore.consumeToken(u.getUsername(), "CHECKOUT", faceToken);
+        if (proof == null) {
+            return new HttpResponseBuilder().status(400)
+                .json("{\"error\":\"Can xac thuc FaceID truoc khi check-out\"}");
+        }
+
         String time = LocalTime.now().format(TIME_FMT);
-        if (!ChamCongDAO.checkOut(u.getUsername(), time)) {
+        if (!ChamCongDAO.checkOut(u.getUsername(), time, true,
+                proof.score, proof.liveness)) {
             return new HttpResponseBuilder().status(400)
                 .json("{\"error\":\"Chua check-in hoac da check-out\"}");
         }
@@ -151,6 +168,11 @@ public class ChamCongController {
           .append("\"checkinLat\":").append(c == null || c.getCheckinLat() == null ? "null" : c.getCheckinLat()).append(",")
           .append("\"checkinLng\":").append(c == null || c.getCheckinLng() == null ? "null" : c.getCheckinLng()).append(",")
           .append("\"checkinFaceVerified\":").append(c != null && c.isCheckinFaceVerified()).append(",")
+          .append("\"checkinFaceScore\":").append(c == null || c.getCheckinFaceScore() == null ? "null" : c.getCheckinFaceScore()).append(",")
+          .append("\"checkinLiveness\":").append(c == null || c.getCheckinLiveness() == null ? "null" : c.getCheckinLiveness()).append(",")
+          .append("\"checkoutFaceVerified\":").append(c != null && c.isCheckoutFaceVerified()).append(",")
+          .append("\"checkoutFaceScore\":").append(c == null || c.getCheckoutFaceScore() == null ? "null" : c.getCheckoutFaceScore()).append(",")
+          .append("\"checkoutLiveness\":").append(c == null || c.getCheckoutLiveness() == null ? "null" : c.getCheckoutLiveness()).append(",")
           .append("\"note\":\"").append(JsonUtil.escape(c == null ? "" : c.getNote())).append("\",")
           .append("\"status\":\"").append(status).append("\",")
           .append("\"workedMinutes\":").append(workedMinutes).append(",")

@@ -76,7 +76,7 @@ Không có Tomcat / Jetty / Spring Boot / Nginx / Apache ở giữa.
 - 🗓️ Đăng ký / xóa **ca làm việc**
 - 📝 Lưu **ghi chú công việc** theo ngày
 - 🔑 Đổi mật khẩu
-- 📸 **FaceID mô phỏng + GPS** trước khi Check-in / Check-out
+- 📸 **FaceID thật** — camera webcam, phát hiện khuôn mặt, blink liveness, descriptor 128D, server tự so khớp; GPS thật từ trình duyệt
 
 ### 👑 Quản trị viên (ADMIN)
 
@@ -411,8 +411,16 @@ java --module-path "lib/javafx-sdk-21.0.5/lib" --add-modules javafx.controls,jav
 | `POST` | `/api/logout` | Đăng xuất | ✅ |
 | `GET` | `/api/ping` | Kiểm tra server | ❌ |
 | `GET` | `/api/attendance/today` | Trạng thái chấm công hôm nay (alias `/api/today`) | ✅ |
-| `POST` | `/api/checkin` | Chấm công vào, nhận `lat`, `lng`, `faceVerified`, `note` | ✅ |
-| `POST` | `/api/checkout` | Chấm công ra | ✅ |
+| `POST` | `/api/checkin` | Chấm công vào, nhận `lat`, `lng`, `faceToken`, `note` | ✅ |
+| `POST` | `/api/checkout` | Chấm công ra, nhận `faceToken` | ✅ |
+| `GET` | `/api/face/status` | Trạng thái đăng ký khuôn mặt | ✅ |
+| `POST` | `/api/face/challenge` | Cấp challenge FaceID một lần | ✅ |
+| `POST` | `/api/face/verify` | So khớp descriptor + liveness, cấp `faceToken` | ✅ |
+| `POST` | `/api/face/reset` | Xóa mẫu khuôn mặt để đăng ký lại | ✅ |
+| `POST` | `/api/face/desktop/start` | Tạo phiên FaceID cho Desktop Client | ✅ |
+| `GET` | `/api/face/desktop/context` | Context của trang quét | ❌ |
+| `POST` | `/api/face/desktop/verify` | Xác thực khuôn mặt từ trình duyệt | ❌ |
+| `GET` | `/api/face/desktop/result` | Desktop Client poll kết quả + `faceToken` | ✅ |
 | `GET` | `/api/history` | Lịch sử chấm công (phân trang, lọc ngày/user) | ✅ |
 | `GET` | `/api/export/csv` | Xuất CSV | ✅ |
 | `GET` | `/api/profile` | Thông tin tài khoản | ✅ |
@@ -513,7 +521,7 @@ không TLS, mật khẩu chưa băm, session trong bộ nhớ chưa hết hạn,
 | vmduc | `12345678` | USER | Võ Minh Đức | Phòng Chăm sóc khách hàng |
 
 > File `database/chamcong_db.sql` dùng `DROP DATABASE` để tạo lại dữ liệu sạch. Chạy lại file này sẽ xóa dữ liệu hiện có trong `chamcong_db`.
-> Hôm nay, `pvkhai` và `ptdung` chưa chấm công để tiện test luồng Check-in + FaceID + GPS trên web.
+> Lần quét FaceID đầu tiên tự đăng ký mẫu khuôn mặt; các lần sau server so khớp descriptor 128D với ngưỡng Euclidean `0.58`. `pvkhai` và `ptdung` chưa chấm công để tiện test luồng Check-in + FaceID + GPS trên web.
 
 ---
 

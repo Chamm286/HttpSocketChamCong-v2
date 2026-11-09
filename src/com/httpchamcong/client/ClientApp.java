@@ -24,6 +24,10 @@ import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
+import java.awt.Desktop;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
+import java.net.URI;
 import java.util.List;
 
 public class ClientApp extends Application {
@@ -990,7 +994,7 @@ public class ClientApp extends Application {
         actionTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         actionTitle.setTextFill(Color.web(C_TEXT));
 
-        Label actionDesc = new Label("Lần đầu trong ngày: CHECK-IN. Khi kết thúc: CHECK-OUT. Hệ thống tự đổi nút theo trạng thái thực tế.");
+        Label actionDesc = new Label("Lần đầu trong ngày: CHECK-IN. Khi kết thúc: CHECK-OUT. Desktop sẽ mở trình duyệt để quét FaceID bằng camera thật, sau đó server tự xác thực faceToken trước khi ghi giờ.");
         actionDesc.setFont(Font.font("Segoe UI", 13));
         actionDesc.setTextFill(Color.web(C_MUTED));
         actionDesc.setWrapText(true);
@@ -1020,8 +1024,9 @@ public class ClientApp extends Application {
         Label r1 = ruleLabel("• Mỗi ngày chỉ CHECK-IN 1 lần.");
         Label r2 = ruleLabel("• Phải CHECK-IN trước khi CHECK-OUT.");
         Label r3 = ruleLabel("• Giờ vào / ra do SERVER ghi nhận, không sửa được từ client.");
-        Label r4 = ruleLabel("• Ca làm chuẩn: 08:00 — 17:00.");
-        ruleCard.getChildren().addAll(ruleTitle, r1, r2, r3, r4);
+        Label r4 = ruleLabel("• FaceID: camera thật + blink liveness + faceToken một lần.");
+        Label r5 = ruleLabel("• Ca làm chuẩn: 08:00 — 17:00.");
+        ruleCard.getChildren().addAll(ruleTitle, r1, r2, r3, r4, r5);
 
         actionRow.getChildren().addAll(actionCard, ruleCard);
 
@@ -1271,19 +1276,73 @@ public class ClientApp extends Application {
 
     private void performAttendance(String action, Button actionBtn, Label result, Runnable refresh) {
         actionBtn.setDisable(true);
-        result.setText("⏳ Đang gửi yêu cầu...");
+        result.setText("⏳ Đang tạo phiên FaceID...");
         result.setTextFill(Color.web(C_MUTED));
 
         new Thread(() -> {
             try {
-                String res = http.post("/api/" + action, "{}");
+                String actionCode = "checkout".equals(action) ? "CHECKOUT" : "CHECKIN";
+                String startRes = http.post("/api/face/desktop/start",
+                    "{\"action\":\"" + actionCode + "\"}");
+                String session = JsonUtil.getString(startRes, "session");
+                String scanUrl = JsonUtil.getString(startRes, "scanUrl");
+                String startErr = JsonUtil.getString(startRes, "error");
+                if (session == null || session.isEmpty() || scanUrl == null || scanUrl.isEmpty()) {
+                    throw new Exception(startErr != null ? startErr : "Server khong tao duoc phien FaceID");
+                }
+
+                String url = scanUrl.startsWith("http")
+                    ? scanUrl
+                    : SocketHttpClient.getBaseUrl() + scanUrl;
+                openFaceScanBrowser(url);
+
+                Platform.runLater(() -> {
+                    result.setText("📷 Đã mở trình duyệt quét FaceID. Hãy chớp mắt để xác thực...");
+                    result.setTextFill(Color.web(C_BLUE));
+                });
+
+                String faceToken = null;
+                String faceErr = null;
+                String scoreText = "";
+                for (int i = 0; i < 125; i++) {
+                    Thread.sleep(1000);
+                    String poll = http.get("/api/face/desktop/result?session="
+                        + java.net.URLEncoder.encode(session, "UTF-8"));
+                    String status = JsonUtil.getString(poll, "status");
+                    if ("DONE".equals(status)) {
+                        faceToken = JsonUtil.getString(poll, "faceToken");
+                        Double score = JsonUtil.getDouble(poll, "score");
+                        scoreText = score == null ? "" : " · độ khớp " + Math.round(score * 100) + "%";
+                        break;
+                    }
+                    if ("ERROR".equals(status)) {
+                        faceErr = JsonUtil.getString(poll, "message");
+                        break;
+                    }
+                    if ((i + 1) % 5 == 0) {
+                        final int sec = i + 1;
+                        Platform.runLater(() -> {
+                            result.setText("📷 Đang chờ FaceID trên trình duyệt... " + sec + "s");
+                            result.setTextFill(Color.web(C_BLUE));
+                        });
+                    }
+                }
+
+                if (faceToken == null || faceToken.isEmpty()) {
+                    throw new Exception(faceErr != null ? faceErr
+                        : "Hết thời gian chờ quét FaceID (120 giây)");
+                }
+
+                String body = "{\"faceToken\":\"" + JsonUtil.escape(faceToken) + "\"}";
+                String res = http.post("/api/" + action, body);
                 String msg = JsonUtil.getString(res, "msg");
                 String err = JsonUtil.getString(res, "error");
                 String time = JsonUtil.getString(res, "time");
 
+                final String scoreInfo = scoreText;
                 Platform.runLater(() -> {
                     if (msg != null) {
-                        result.setText("✅ " + msg + (time != null ? " — " + time : ""));
+                        result.setText("✅ " + msg + (time != null ? " — " + time : "") + scoreInfo);
                         result.setTextFill(Color.web(C_GREEN));
                     } else {
                         result.setText("❌ " + (err != null ? err : res));
@@ -1293,12 +1352,40 @@ public class ClientApp extends Application {
                 });
             } catch (Exception ex) {
                 Platform.runLater(() -> {
-                    result.setText("❌ Lỗi kết nối: " + ex.getMessage());
+                    result.setText("❌ " + ex.getMessage());
                     result.setTextFill(Color.web(C_RED));
                     actionBtn.setDisable(false);
                 });
             }
         }).start();
+    }
+
+    /** Mở trang quét FaceID trong trình duyệt mặc định (camera thật). */
+    private void openFaceScanBrowser(String url) {
+        boolean opened = false;
+        try {
+            if (Desktop.isDesktopSupported()
+                    && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(URI.create(url));
+                opened = true;
+            }
+        } catch (Exception ignored) {
+            // fallback bên dưới
+        }
+        if (opened) return;
+
+        try {
+            Toolkit.getDefaultToolkit().getSystemClipboard()
+                .setContents(new StringSelection(url), null);
+        } catch (Exception ignored) {}
+
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("FaceID Camera");
+            alert.setHeaderText("Không tự mở được trình duyệt");
+            alert.setContentText("Đã copy URL quét FaceID vào clipboard. Hãy dán vào Chrome/Edge:\n\n" + url);
+            alert.showAndWait();
+        });
     }
 
     private void stopAttendanceTicker() {

@@ -81,10 +81,13 @@ public final class StaticFileHandler {
             String ext = extension(file.getFileName().toString());
             String mime = MIME.getOrDefault(ext, "application/octet-stream");
 
+            String cache = path.startsWith("/assets/models/")
+                ? "public, max-age=86400, immutable"
+                : "no-cache";
             HttpResponseBuilder res = new HttpResponseBuilder()
                 .status(200)
                 .header("Content-Type", mime)
-                .header("Cache-Control", "no-cache")
+                .header("Cache-Control", cache)
                 .header("X-Content-Type-Options", "nosniff");
 
             if (mime.startsWith("text/") || mime.contains("javascript") || mime.contains("json")

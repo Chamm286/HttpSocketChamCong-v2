@@ -42,6 +42,11 @@ public class SocketHttpClient {
         return HOST + ":" + PORT;
     }
 
+    /** Base URL cho Web Client / trang quét FaceID. */
+    public static String getBaseUrl() {
+        return "http://" + HOST + ":" + PORT;
+    }
+
     public String get(String path) throws IOException {
         return request("GET", path, null);
     }
