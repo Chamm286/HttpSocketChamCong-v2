@@ -1,4 +1,4 @@
-﻿package com.httpchamcong.model;
+package com.httpchamcong.model;
 
 public class WorkNote {
     private int id;

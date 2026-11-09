@@ -78,23 +78,23 @@ public class ServerApp extends Application {
     // ⭐ Theme toggle
     private boolean isDarkMode = false;
 
-    // ===== PALETTE — CYAN/NGỌC (không tím) =====
-    private static final String C_BG       = "#f0f9ff";   // Nền xanh rất nhạt
+    // ===== PALETTE - PROFESSIONAL BLUE (khong dung tim) =====
+    private static final String C_BG       = "#f3f7fc";
     private static final String C_CARD     = "#ffffff";
     private static final String C_CARD2    = "#f8fafc";
-    private static final String C_BORDER   = "#cbd5e1";
-    private static final String C_TEXT     = "#0c1220";   // Đen đậm rõ
-    private static final String C_TEXT2    = "#1e293b";   // Đậm hơn
-    private static final String C_MUTED    = "#475569";   // Rõ hơn
-    private static final String C_ACCENT   = "#0891b2";   // Cyan-600 (xanh ngọc)
-    private static final String C_ACCENT2  = "#0e7490";   // Cyan-700
-    private static final String C_GREEN    = "#059669";   // Emerald-600 (đậm hơn)
-    private static final String C_ORANGE   = "#ea580c";   // Orange-600
-    private static final String C_BLUE     = "#2563eb";   // Blue-600
-    private static final String C_VIOLET   = "#7c3aed";   // Violet-600 (thay cho Purple)
-    private static final String C_RED      = "#dc2626";   // Red-600
-    private static final String C_TEAL     = "#0d9488";   // Teal-600
-    private static final String C_AMBER    = "#d97706";   // Amber-600
+    private static final String C_BORDER   = "#dbe4ef";
+    private static final String C_TEXT     = "#0f172a";
+    private static final String C_TEXT2    = "#1e3a5f";
+    private static final String C_MUTED    = "#64748b";
+    private static final String C_ACCENT   = "#2563eb";
+    private static final String C_ACCENT2  = "#1d4ed8";
+    private static final String C_GREEN    = "#16a34a";
+    private static final String C_ORANGE   = "#ea580c";
+    private static final String C_BLUE     = "#0284c7";
+    private static final String C_SKY      = "#0ea5e9";
+    private static final String C_RED      = "#dc2626";
+    private static final String C_TEAL     = "#0e7490";
+    private static final String C_AMBER    = "#d97706";
 
     @Override
     public void start(Stage stage) {
@@ -112,14 +112,14 @@ public class ServerApp extends Application {
         StackPane logoCircle = new StackPane();
         logoCircle.setPrefSize(46, 46);
         logoCircle.setMaxSize(46, 46);
-        logoCircle.setStyle("-fx-background-color: linear-gradient(to bottom right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 23; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.5), 10, 0, 0, 3);");
+        logoCircle.setStyle("-fx-background-color: linear-gradient(to bottom right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 23; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.5), 10, 0, 0, 3);");
         FontIcon logoIcon = new FontIcon(FontAwesomeSolid.SERVER);
         logoIcon.setIconSize(22);
         logoIcon.setIconColor(Color.WHITE);
         logoCircle.getChildren().add(logoIcon);
 
         VBox titleBox = new VBox(2);
-        Label title = new Label("SERVER DASHBOARD");
+        Label title = new Label("CHAMCONG SERVER CONTROL");
         title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         title.setTextFill(Color.web(C_TEXT));
         Label sub = new Label("HTTP/1.1 over Socket TCP  •  Port " + HttpSocketServer.PORT);
@@ -133,18 +133,38 @@ public class ServerApp extends Application {
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
 
+        Button openWebBtn = new Button("  WEB CLIENT");
+        FontIcon globeIcon = new FontIcon(FontAwesomeSolid.GLOBE);
+        globeIcon.setIconSize(13);
+        globeIcon.setIconColor(Color.WHITE);
+        openWebBtn.setGraphic(globeIcon);
+        openWebBtn.setPrefHeight(38);
+        openWebBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+        openWebBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 16 0 16; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.35), 10, 0, 0, 3);");
+        openWebBtn.setOnAction(e -> getHostServices().showDocument("http://localhost:" + HttpSocketServer.PORT + "/"));
+
+        Button openAdminBtn = new Button("  ADMIN");
+        FontIcon shieldIcon = new FontIcon(FontAwesomeSolid.SHIELD_ALT);
+        shieldIcon.setIconSize(13);
+        shieldIcon.setIconColor(Color.web(C_ACCENT));
+        openAdminBtn.setGraphic(shieldIcon);
+        openAdminBtn.setPrefHeight(38);
+        openAdminBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+        openAdminBtn.setStyle("-fx-background-color: #eff6ff; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 16 0 16; -fx-border-color: #bfdbfe; -fx-border-radius: 10; -fx-border-width: 1;");
+        openAdminBtn.setOnAction(e -> getHostServices().showDocument("http://localhost:" + HttpSocketServer.PORT + "/#/admin-users"));
+
         // ⭐ Nút Dark/Light toggle
         Button themeToggleBtn = new Button("🌙");
         themeToggleBtn.setPrefSize(42, 42);
         themeToggleBtn.setFont(Font.font("Segoe UI", 16));
         themeToggleBtn.setStyle("-fx-background-color: " + C_CARD2 + "; -fx-background-radius: 21; -fx-cursor: hand; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 21; -fx-border-width: 1;");
-        themeToggleBtn.setOnMouseEntered(e -> themeToggleBtn.setStyle("-fx-background-color: #e0f2fe; -fx-background-radius: 21; -fx-cursor: hand; -fx-border-color: " + C_ACCENT + "; -fx-border-radius: 21; -fx-border-width: 1;"));
+        themeToggleBtn.setOnMouseEntered(e -> themeToggleBtn.setStyle("-fx-background-color: #eff6ff; -fx-background-radius: 21; -fx-cursor: hand; -fx-border-color: " + C_ACCENT + "; -fx-border-radius: 21; -fx-border-width: 1;"));
         themeToggleBtn.setOnMouseExited(e -> themeToggleBtn.setStyle("-fx-background-color: " + C_CARD2 + "; -fx-background-radius: 21; -fx-cursor: hand; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 21; -fx-border-width: 1;"));
 
         serverIpLabel = new Label();
         serverIpLabel.setFont(Font.font("Consolas", FontWeight.BOLD, 12));
         serverIpLabel.setTextFill(Color.web(C_ACCENT));
-        serverIpLabel.setStyle("-fx-background-color: #ecfeff; -fx-background-radius: 20; -fx-padding: 8 16 8 16; -fx-border-color: #a5f3fc; -fx-border-radius: 20; -fx-border-width: 1;");
+        serverIpLabel.setStyle("-fx-background-color: #eff6ff; -fx-background-radius: 20; -fx-padding: 8 16 8 16; -fx-border-color: #bfdbfe; -fx-border-radius: 20; -fx-border-width: 1;");
 
         statusBadge = new Label("  STOPPED");
         FontIcon stopIcon = new FontIcon(FontAwesomeSolid.STOP_CIRCLE);
@@ -155,7 +175,7 @@ public class ServerApp extends Application {
         statusBadge.setTextFill(Color.web(C_RED));
         statusBadge.setStyle("-fx-background-color: #fef2f2; -fx-background-radius: 20; -fx-padding: 8 18 8 18; -fx-border-color: #fecaca; -fx-border-radius: 20; -fx-border-width: 1;");
 
-        header.getChildren().addAll(logoBox, sp, themeToggleBtn, serverIpLabel, statusBadge);
+        header.getChildren().addAll(logoBox, sp, openWebBtn, openAdminBtn, themeToggleBtn, serverIpLabel, statusBadge);
 
         // ============ LEFT PANEL ============
         VBox leftPanel = new VBox(18);
@@ -186,7 +206,7 @@ public class ServerApp extends Application {
         startBtn.setMaxWidth(Double.MAX_VALUE);
         startBtn.setPrefHeight(48);
         startBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        startBtn.setStyle("-fx-background-color: " + C_GREEN + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(5,150,105,0.4), 12, 0, 0, 4);");
+        startBtn.setStyle("-fx-background-color: " + C_GREEN + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(22,163,74,0.4), 12, 0, 0, 4);");
         startBtn.setOnAction(e -> startServer());
 
         stopBtn = new Button("  STOP SERVER");
@@ -237,7 +257,7 @@ public class ServerApp extends Application {
         statsList.getChildren().addAll(
             statRow(FontAwesomeSolid.USERS, "Client online", activeClientsVal, C_GREEN),
             statRow(FontAwesomeSolid.USER_PLUS, "Tổng client", totalClientsVal, C_BLUE),
-            statRow(FontAwesomeSolid.EXCHANGE_ALT, "Tổng request", totalRequestsVal, C_VIOLET),
+            statRow(FontAwesomeSolid.EXCHANGE_ALT, "Tổng request", totalRequestsVal, C_SKY),
             statRow(FontAwesomeSolid.CLOCK, "Uptime", uptimeVal, C_ORANGE)
         );
 
@@ -359,6 +379,11 @@ public class ServerApp extends Application {
 
         log("=== Server Dashboard sẵn sàng ===");
         log("Bấm 'START SERVER' để khởi động.");
+
+        // Cho phép chạy full project bằng run.bat: ServerApp --autostart
+        if (getParameters().getRaw().contains("--autostart")) {
+            Platform.runLater(this::startServer);
+        }
     }
 
     private String getGlobalCss() {
@@ -378,8 +403,8 @@ public class ServerApp extends Application {
             ".table-view .table-cell { -fx-text-fill: " + C_TEXT + "; -fx-border-color: transparent " + C_BORDER + " transparent transparent; -fx-padding: 9 12 9 12; -fx-alignment: center-left; }" +
             ".table-view .table-row-cell { -fx-background-color: " + C_CARD + "; -fx-cell-size: 44; -fx-border-color: transparent transparent " + C_BORDER + " transparent; -fx-border-width: 0 0 1 0; }" +
             ".table-view .table-row-cell:odd { -fx-background-color: " + C_CARD2 + "; }" +
-            ".table-view .table-row-cell:hover { -fx-background-color: #e0f2fe; }" +
-            ".table-view .table-row-cell:selected { -fx-background-color: #bae6fd; }" +
+            ".table-view .table-row-cell:hover { -fx-background-color: #eff6ff; }" +
+            ".table-view .table-row-cell:selected { -fx-background-color: #dbeafe; }" +
             ".scroll-pane { -fx-background-color: transparent; }" +
             ".scroll-pane > .viewport { -fx-background-color: transparent; }" +
             ".scroll-bar:vertical, .scroll-bar:horizontal { -fx-background-color: transparent; }" +
@@ -387,7 +412,7 @@ public class ServerApp extends Application {
             ".scroll-bar .thumb:hover { -fx-background-color: " + C_MUTED + "; }" +
             ".text-field { -fx-text-fill: " + C_TEXT + "; -fx-prompt-text-fill: " + C_MUTED + "; }" +
             ".combo-box .list-cell { -fx-text-fill: " + C_TEXT + "; -fx-background-color: " + C_CARD + "; }" +
-            ".combo-box-popup .list-view .list-cell:filled:hover { -fx-background-color: #e0f2fe; -fx-text-fill: " + C_ACCENT + "; }" +
+            ".combo-box-popup .list-view .list-cell:filled:hover { -fx-background-color: #eff6ff; -fx-text-fill: " + C_ACCENT + "; }" +
             ".combo-box-popup .list-view .list-cell:filled:selected { -fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; }" +
             ".chart { -fx-background-color: transparent; }" +
             ".chart-plot-background { -fx-background-color: " + C_CARD + "; }" +
@@ -502,7 +527,7 @@ public class ServerApp extends Application {
         pieHeader.setAlignment(Pos.CENTER_LEFT);
         FontIcon pieIcn = new FontIcon(FontAwesomeSolid.CHART_PIE);
         pieIcn.setIconSize(14);
-        pieIcn.setIconColor(Color.web(C_VIOLET));
+        pieIcn.setIconColor(Color.web(C_SKY));
         Label pieTitle = new Label("  HTTP Status Codes");
         pieTitle.setGraphic(pieIcn);
         pieTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
@@ -558,7 +583,7 @@ public class ServerApp extends Application {
             methodStatBar("POST", methodPostVal, C_GREEN),
             methodStatBar("DELETE", methodDeleteVal, C_RED),
             methodStatBar("PUT", methodPutVal, C_ORANGE),
-            methodStatBar("PATCH", methodPatchVal, C_VIOLET)
+            methodStatBar("PATCH", methodPatchVal, C_SKY)
         );
 
         methodCard.getChildren().addAll(methodHeader, methodBars);
@@ -647,7 +672,7 @@ public class ServerApp extends Application {
         HBox.setHgrow(sp, Priority.ALWAYS);
 
         Label countLbl = new Label("0 requests");
-        countLbl.setStyle("-fx-text-fill: " + C_ACCENT + "; -fx-font-weight: bold; -fx-font-size: 12; -fx-background-color: #ecfeff; -fx-background-radius: 16; -fx-padding: 6 14 6 14; -fx-border-color: #a5f3fc; -fx-border-radius: 16; -fx-border-width: 1;");
+        countLbl.setStyle("-fx-text-fill: " + C_ACCENT + "; -fx-font-weight: bold; -fx-font-size: 12; -fx-background-color: #eff6ff; -fx-background-radius: 16; -fx-padding: 6 14 6 14; -fx-border-color: #bfdbfe; -fx-border-radius: 16; -fx-border-width: 1;");
 
         Button clearBtn = new Button("  Clear view");
         FontIcon clearIcn = new FontIcon(FontAwesomeSolid.TRASH_ALT);
@@ -688,7 +713,7 @@ public class ServerApp extends Application {
                     else if ("POST".equals(item)) color = C_GREEN;
                     else if ("DELETE".equals(item)) color = C_RED;
                     else if ("PUT".equals(item)) color = C_ORANGE;
-                    else if ("PATCH".equals(item)) color = C_VIOLET;
+                    else if ("PATCH".equals(item)) color = C_SKY;
                     setStyle("-fx-text-fill: " + color + "; -fx-font-weight: bold; -fx-font-family: 'Consolas';");
                 }
             }
@@ -798,7 +823,7 @@ public class ServerApp extends Application {
 
         logArea = new TextArea();
         logArea.setEditable(false);
-        logArea.setStyle("-fx-font-family: 'Consolas', monospace; -fx-font-size: 12.5; -fx-control-inner-background: #0c1220; -fx-text-fill: #22d3ee; -fx-background-radius: 12; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
+        logArea.setStyle("-fx-font-family: 'Consolas', monospace; -fx-font-size: 12.5; -fx-control-inner-background: #0c1220; -fx-text-fill: #38bdf8; -fx-background-radius: 12; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
         VBox.setVgrow(logArea, Priority.ALWAYS);
 
         box.getChildren().addAll(headerRow, logArea);
@@ -827,7 +852,7 @@ public class ServerApp extends Application {
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
 
-        Label countLbl = new Label("25 endpoints");
+        Label countLbl = new Label("29 endpoints");
         countLbl.setStyle("-fx-text-fill: " + C_BLUE + "; -fx-font-weight: bold; -fx-font-size: 12; -fx-background-color: #dbeafe; -fx-background-radius: 16; -fx-padding: 6 14 6 14; -fx-border-color: #93c5fd; -fx-border-radius: 16; -fx-border-width: 1;");
 
         headerRow.getChildren().addAll(title, sp, countLbl);
@@ -840,7 +865,7 @@ public class ServerApp extends Application {
         VBox eps = new VBox(10);
         eps.setPadding(new Insets(0, 8, 0, 0));
 
-        eps.getChildren().add(sectionHeader("🔐 AUTHENTICATION", C_VIOLET));
+        eps.getChildren().add(sectionHeader("🔐 AUTHENTICATION", C_SKY));
         eps.getChildren().addAll(
             endpointCard("POST", "/api/login", "Đăng nhập, trả về bearer token"),
             endpointCard("POST", "/api/logout", "Đăng xuất, hủy session token"),
@@ -853,6 +878,7 @@ public class ServerApp extends Application {
         eps.getChildren().addAll(
             endpointCard("POST", "/api/checkin", "Chấm công vào — ghi giờ vào"),
             endpointCard("POST", "/api/checkout", "Chấm công ra — ghi giờ ra"),
+            endpointCard("GET", "/api/attendance/today", "Trạng thái chấm công hôm nay"),
             endpointCard("GET", "/api/history", "Lịch sử chấm công (filter + paging)"),
             endpointCard("GET", "/api/export/csv", "Export CSV lịch sử chấm công")
         );
@@ -919,7 +945,7 @@ public class ServerApp extends Application {
         row.setAlignment(Pos.CENTER_LEFT);
         row.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 10; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 6, 0, 0, 2);");
 
-        row.setOnMouseEntered(e -> row.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 10; -fx-border-color: " + C_ACCENT + "; -fx-border-radius: 10; -fx-border-width: 1.5; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.2), 10, 0, 0, 3);"));
+        row.setOnMouseEntered(e -> row.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 10; -fx-border-color: " + C_ACCENT + "; -fx-border-radius: 10; -fx-border-width: 1.5; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.2), 10, 0, 0, 3);"));
         row.setOnMouseExited(e -> row.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 10; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 6, 0, 0, 2);"));
 
         Label methodLbl = new Label(method);
@@ -933,7 +959,7 @@ public class ServerApp extends Application {
         else if ("GET".equals(method)) bgColor = C_BLUE;
         else if ("DELETE".equals(method)) bgColor = C_RED;
         else if ("PUT".equals(method)) bgColor = C_ORANGE;
-        else if ("PATCH".equals(method)) bgColor = C_VIOLET;
+        else if ("PATCH".equals(method)) bgColor = C_SKY;
         else bgColor = C_MUTED;
 
         methodLbl.setStyle("-fx-background-color: " + bgColor + "; -fx-background-radius: 6; -fx-padding: 5 12 5 12;");
@@ -966,7 +992,7 @@ public class ServerApp extends Application {
 
         FontIcon icn = new FontIcon(FontAwesomeSolid.FLASK);
         icn.setIconSize(18);
-        icn.setIconColor(Color.web(C_VIOLET));
+        icn.setIconColor(Color.web(C_SKY));
 
         Label title = new Label("  HTTP Tester — Gửi request trực tiếp");
         title.setGraphic(icn);
@@ -1027,7 +1053,7 @@ public class ServerApp extends Application {
         sendBtn.setGraphic(sendIcn);
         sendBtn.setPrefHeight(44);
         sendBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        sendBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 24 0 24; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.4), 12, 0, 0, 4);");
+        sendBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 24 0 24; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.4), 12, 0, 0, 4);");
         sendBtn.setOnAction(e -> doSendTest());
 
         Button clearBtn = new Button("  Clear");
@@ -1079,7 +1105,7 @@ public class ServerApp extends Application {
         rawResponseArea = new TextArea();
         rawResponseArea.setEditable(false);
         rawResponseArea.setPrefHeight(220);
-        rawResponseArea.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 11.5; -fx-control-inner-background: #0c1220; -fx-text-fill: #22d3ee; -fx-background-radius: 10; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1;");
+        rawResponseArea.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 11.5; -fx-control-inner-background: #0c1220; -fx-text-fill: #38bdf8; -fx-background-radius: 10; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1;");
 
         resCard.getChildren().addAll(resTitle, rawResponseArea);
 
@@ -1185,7 +1211,7 @@ public class ServerApp extends Application {
 
         keepAliveCheck  = settingCheck("Keep-Alive Connection", "Duy trì kết nối TCP — giảm overhead handshake", "Connection: keep-alive", C_GREEN);
         gzipCheck       = settingCheck("Gzip Compression", "Nén response body — giảm bandwidth", "Accept-Encoding: gzip", C_BLUE);
-        corsCheck       = settingCheck("CORS Headers", "Cho phép cross-origin requests từ browser", "Access-Control-Allow-Origin: *", C_VIOLET);
+        corsCheck       = settingCheck("CORS Headers", "Cho phép cross-origin requests từ browser", "Access-Control-Allow-Origin: *", C_SKY);
         rateLimitCheck  = settingCheck("Rate Limiting", "Giới hạn 100 requests/phút/IP — chống DoS", "429 Too Many Requests", C_RED);
 
         protoCard.getChildren().addAll(protoTitle, protoDesc, new Separator(),
@@ -1221,7 +1247,7 @@ public class ServerApp extends Application {
         applyBtn.setGraphic(applyIcn);
         applyBtn.setPrefHeight(44);
         applyBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        applyBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 24 0 24; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.4), 12, 0, 0, 4);");
+        applyBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 24 0 24; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.4), 12, 0, 0, 4);");
         applyBtn.setOnAction(e -> {
             log("⚙️ Cấu hình HTTP/1.1 đã được cập nhật:");
             log("   • Keep-Alive: " + (keepAliveCheck.isSelected() ? "ON" : "OFF"));
@@ -1380,7 +1406,7 @@ public class ServerApp extends Application {
         rIcn.setIconColor(Color.web(C_ACCENT));
         refreshBtn.setGraphic(rIcn);
         refreshBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        refreshBtn.setStyle("-fx-background-color: #ecfeff; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 10 20 10 20; -fx-border-color: #a5f3fc; -fx-border-radius: 8; -fx-border-width: 1;");
+        refreshBtn.setStyle("-fx-background-color: #eff6ff; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 10 20 10 20; -fx-border-color: #bfdbfe; -fx-border-radius: 8; -fx-border-width: 1;");
         refreshBtn.setOnAction(e -> refreshClientTable());
 
         box.getChildren().addAll(headerRow, clientTable, refreshBtn);
@@ -1525,7 +1551,7 @@ public class ServerApp extends Application {
         statusBadge.setStyle("-fx-background-color: #fef2f2; -fx-background-radius: 20; -fx-padding: 8 18 8 18; -fx-border-color: #fecaca; -fx-border-radius: 20; -fx-border-width: 1;");
 
         startBtn.setDisable(false);
-        startBtn.setStyle("-fx-background-color: " + C_GREEN + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(5,150,105,0.4), 12, 0, 0, 4);");
+        startBtn.setStyle("-fx-background-color: " + C_GREEN + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(22,163,74,0.4), 12, 0, 0, 4);");
 
         stopBtn.setDisable(true);
         stopBtn.setStyle("-fx-background-color: " + C_CARD2 + "; -fx-text-fill: " + C_MUTED + "; -fx-background-radius: 10; -fx-cursor: not-allowed; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1;");

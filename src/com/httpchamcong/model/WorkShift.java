@@ -1,5 +1,7 @@
 package com.httpchamcong.model;
 
+import com.httpchamcong.util.JsonUtil;
+
 public class WorkShift {
     private int id;
     private String username;
@@ -37,10 +39,10 @@ public class WorkShift {
         return String.format(
             "{\"id\":%d,\"username\":\"%s\",\"fullName\":\"%s\"," +
             "\"shiftDate\":\"%s\",\"shiftType\":\"%s\",\"note\":\"%s\"}",
-            id, username,
-            fullName == null ? "" : fullName,
-            shiftDate, shiftType,
-            note == null ? "" : note.replace("\"", "'")
+            id, JsonUtil.escape(username),
+            JsonUtil.escape(fullName),
+            JsonUtil.escape(shiftDate), JsonUtil.escape(shiftType),
+            JsonUtil.escape(note)
         );
     }
 }

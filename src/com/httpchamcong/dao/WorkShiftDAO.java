@@ -78,6 +78,20 @@ public class WorkShiftDAO {
         return list;
     }
 
+    public static WorkShift findById(int id) {
+        String sql = "SELECT w.*, u.full_name FROM work_shifts w " +
+                     "LEFT JOIN users u ON w.username = u.username " +
+                     "WHERE w.id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return null;
+    }
+
     public static boolean deleteById(int id) {
         String sql = "DELETE FROM work_shifts WHERE id = ?";
         try (Connection conn = DBConnection.getConnection();

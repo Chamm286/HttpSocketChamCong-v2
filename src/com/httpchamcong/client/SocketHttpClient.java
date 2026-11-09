@@ -13,22 +13,24 @@ import java.nio.charset.StandardCharsets;
  * ═══════════════════════════════════════════════════════════════
  *
  *  🅰️ CHẠY TRÊN 1 MÁY (Local):
- *     private static final String HOST = "localhost";
+ *     mặc định HOST = "localhost"
  *
  *  🅱️ CHẠY TRÊN 2 MÁY (LAN):
- *     private static final String HOST = "192.168.1.100";
+ *     java -Dchamcong.server.host=192.168.1.100 ...
+ *     hoặc set biến môi trường CHAMCONG_SERVER_HOST
  */
 public class SocketHttpClient {
 
-    // 🅰️ TRƯỜNG HỢP 1: 1 MÁY (Local)
-    private static final String HOST = "localhost";
-
-    // 🅱️ TRƯỜNG HỢP 2: 2 MÁY (LAN) — Comment dòng trên, mở dòng dưới
-    // private static final String HOST = "192.168.1.100";
-
-    private static final int PORT = 2020;
+    private static final String HOST = getConfig("chamcong.server.host", "CHAMCONG_SERVER_HOST", "localhost");
+    private static final int PORT = Integer.getInteger("chamcong.server.port", 2020);
     private static final int CONNECT_TIMEOUT_MS = 5000;   // 5 giây
     private static final int READ_TIMEOUT_MS = 15000;     // 15 giây
+
+    private static String getConfig(String prop, String env, String defaultValue) {
+        String v = System.getProperty(prop);
+        if (v == null || v.isEmpty()) v = System.getenv(env);
+        return (v == null || v.isEmpty()) ? defaultValue : v;
+    }
 
     private String token = null;
 
@@ -54,8 +56,6 @@ public class SocketHttpClient {
 
     /**
      * Gửi HTTP/1.1 request thủ công qua Socket.
-     *
-     * ⭐ FIX BUG 15s: Đọc response bằng BYTE[] thay vì CHAR[].
      * Vì Content-Length tính bằng BYTES, không phải CHARS.
      * Với UTF-8 nhiều bytes (tiếng Việt), 1 char = 2-3 bytes
      * → Nếu đọc char[contentLength] sẽ block chờ đủ chars → timeout 15s.

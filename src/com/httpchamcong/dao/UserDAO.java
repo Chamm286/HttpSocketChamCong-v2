@@ -8,24 +8,18 @@ import java.util.List;
 public class UserDAO {
 
     /** Tìm user theo username + password (đăng nhập) */
+    /** Tim user theo username + password (dang nhap) */
     public static User findUser(String username, String password) {
-        String sql = "SELECT username, password, full_name, role FROM users WHERE username = ? AND password = ?";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, username);
-            ps.setString(2, password);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return new User(
-                        rs.getString("username"),
-                        rs.getString("password"),
-                        rs.getString("full_name"),
-                        rs.getString("role")
-                    );
-                }
-            }
-        } catch (SQLException e) { e.printStackTrace(); }
-        return null;
+        User u = findByUsername(username);
+        if (u == null) {
+            System.out.println("[AUTH] User khong ton tai: " + username);
+            return null;
+        }
+        if (!u.getPassword().equals(password)) {
+            System.out.println("[AUTH] Sai mat khau cho user: " + username);
+            return null;
+        }
+        return u;
     }
 
     /** Tìm user theo username */

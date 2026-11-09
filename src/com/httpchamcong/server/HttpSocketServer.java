@@ -1,8 +1,11 @@
 package com.httpchamcong.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Enumeration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -41,7 +44,14 @@ public class HttpSocketServer {
     public void start() throws IOException {
         if (running) return;
 
-        serverSocket = new ServerSocket(PORT);
+        // Lắng nghe trên mọi interface để hỗ trợ LAN (IPv4/IPv6).
+        // Thử IPv6 wildcard (::) trước, fallback IPv4 wildcard (0.0.0.0).
+        try {
+            serverSocket = new ServerSocket();
+            serverSocket.bind(new java.net.InetSocketAddress(InetAddress.getByName("::"), PORT), 50);
+        } catch (Exception e) {
+            serverSocket = new ServerSocket(PORT, 50, InetAddress.getByName("0.0.0.0"));
+        }
         pool = Executors.newFixedThreadPool(POOL_SIZE);
         running = true;
         ServerStats.serverStarted();
@@ -51,6 +61,27 @@ public class HttpSocketServer {
         acceptThread.start();
 
         log("[SERVER] Started on port " + PORT + " with " + POOL_SIZE + " threads");
+        logNetworkAddresses();
+    }
+
+    private void logNetworkAddresses() {
+        log("[NETWORK] Listening on all interfaces (IPv4/IPv6). Reachable addresses:");
+        try {
+            Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
+            while (nis.hasMoreElements()) {
+                NetworkInterface ni = nis.nextElement();
+                if (!ni.isUp() || ni.isLoopback()) continue;
+                Enumeration<InetAddress> addrs = ni.getInetAddresses();
+                while (addrs.hasMoreElements()) {
+                    InetAddress addr = addrs.nextElement();
+                    log("  " + ni.getDisplayName() + " -> " + addr.getHostAddress());
+                }
+            }
+        } catch (Exception e) {
+            log("[NETWORK] Cannot enumerate interfaces: " + e.getMessage());
+        }
+        log("  Localhost: 127.0.0.1 / ::1");
+        log("[WEB] http://localhost:" + PORT + "/  (web root: " + StaticFileHandler.describeRoot() + ")");
     }
 
     /** Vòng lặp chấp nhận client */
@@ -85,4 +116,18 @@ public class HttpSocketServer {
 
     /** Log từ bên ngoài (ClientHandler gọi) */
     public void logExternal(String msg) { log(msg); }
+
+    /**
+     * Chạy server không giao diện (headless) — dùng để test hoặc chạy trên máy chủ.
+     * Chạy: java com.httpchamcong.server.HttpSocketServer
+     */
+    public static void main(String[] args) throws Exception {
+        HttpSocketServer server = new HttpSocketServer();
+        server.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(server::stop, "HttpServer-Shutdown"));
+
+        System.out.println("[SERVER] Headless mode — nhan Ctrl+C de dung.");
+        new java.util.concurrent.CountDownLatch(1).await();
+    }
 }

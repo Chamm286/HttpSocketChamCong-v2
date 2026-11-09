@@ -2,7 +2,11 @@ package com.httpchamcong.server;
 
 import com.httpchamcong.model.User;
 import com.httpchamcong.server.controller.*;
+import com.httpchamcong.util.JsonUtil;
 import com.httpchamcong.util.SessionManager;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 public class Router {
 
@@ -13,10 +17,48 @@ public class Router {
     private final LeaveController leaveCtrl = new LeaveController();
     private final WorkShiftController workShiftCtrl = new WorkShiftController();
     private final NoteController noteCtrl = new NoteController();  
+    private final FileController fileCtrl = new FileController(); 
 
     public HttpResponseBuilder handle(HttpRequestParser req) {
         String path = req.getPath();
         String method = req.getMethod();
+
+        // RFC 7231: HEAD được xử lý như GET, nhưng ClientHandler sẽ không gửi body
+        if ("HEAD".equals(method)) method = "GET";
+
+        // RFC 7231: OPTIONS trả về các method được hỗ trợ
+        if ("OPTIONS".equals(method)) {
+            return new HttpResponseBuilder()
+                .status(204)
+                .header("Allow", "GET, HEAD, POST, PATCH, DELETE, OPTIONS")
+                .body("");
+        }
+
+        // ============ AUTHORIZATION: ADMIN-ONLY API ============
+        if (path.startsWith("/api/admin/")) {
+            User current = SessionManager.getUser(req.getBearerToken());
+            if (current == null) {
+                return new HttpResponseBuilder().status(401)
+                    .json("{\"error\":\"Chua dang nhap hoac token khong hop le\"}");
+            }
+            if (!"ADMIN".equalsIgnoreCase(current.getRole())) {
+                return new HttpResponseBuilder().status(403)
+                    .json("{\"error\":\"Khong co quyen truy cap (chi ADMIN)\"}");
+            }
+        }
+
+        // ============ FILE DOWNLOAD SERVICE ============
+        if (path.startsWith("/files/")) {
+            String fileName = URLDecoder.decode(path.substring("/files/".length()), StandardCharsets.UTF_8);
+            return fileCtrl.download(req, fileName);
+        }
+
+        // ============ WEB CLIENT (HTML/CSS/JS) ============
+        // Mọi path không phải /api/... sẽ được thử phục vụ như file tĩnh.
+        if (!path.startsWith("/api/")) {
+            HttpResponseBuilder page = StaticFileHandler.serve(path, method);
+            if (page != null) return page;
+        }
 
         try {
 
@@ -88,6 +130,11 @@ public class Router {
                     if (!"GET".equals(method)) return methodNotAllowed("GET");
                     return chamCong.history(req);
 
+                case "/api/attendance/today":
+                case "/api/today":
+                    if (!"GET".equals(method)) return methodNotAllowed("GET");
+                    return chamCong.today(req);
+
                 case "/api/export/csv":
                     if (!"GET".equals(method)) return methodNotAllowed("GET");
                     return chamCong.exportCsv(req);
@@ -112,6 +159,7 @@ public class Router {
                     return methodNotAllowed("GET, POST");
 
                 case "/api/leave-request":
+                case "/api/leave-requests":
                     if (!"POST".equals(method)) return methodNotAllowed("POST");
                     return leaveCtrl.request(req);
 
@@ -182,12 +230,12 @@ public class Router {
 
                 default:
                     return new HttpResponseBuilder().status(404)
-                        .json("{\"error\":\"Endpoint khong ton tai: " + path + "\"}");
+                        .json("{\"error\":\"Endpoint khong ton tai: " + JsonUtil.escape(path) + "\"}");
             }
         } catch (Exception e) {
             e.printStackTrace();
             return new HttpResponseBuilder().status(500)
-                .json("{\"error\":\"" + e.getMessage() + "\"}");
+                .json("{\"error\":\"" + JsonUtil.escape(e.getMessage()) + "\"}");
         }
     }
 

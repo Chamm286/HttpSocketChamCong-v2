@@ -17,6 +17,9 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
 
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
@@ -36,6 +39,8 @@ public class ClientApp extends Application {
     private Label pageSubtitle;
     private Label clockLabel;
     private Button activeBtn;
+    private Button attendanceBtn;
+    private Timeline attendanceTicker;
 
     private TextField userField;
     private PasswordField passField;
@@ -59,7 +64,7 @@ public class ClientApp extends Application {
     private static final String C_GREEN    = "#059669";   // Emerald-600
     private static final String C_ORANGE   = "#ea580c";   // Orange-600
     private static final String C_BLUE     = "#2563eb";   // Blue-600
-    private static final String C_VIOLET   = "#7c3aed";   // Violet-600 (thay cho purple)
+    private static final String C_VIOLET   = "#0284c7";   // Sky-600 (khong dung tim)
     private static final String C_RED      = "#dc2626";   // Red-600
     private static final String C_TEAL     = "#0d9488";   // Teal-600
     private static final String C_AMBER    = "#d97706";   // Amber-600
@@ -273,7 +278,7 @@ public class ClientApp extends Application {
         userIcon.setIconSize(14);
         userIcon.setIconColor(Color.web(C_MUTED));
 
-        userField = new TextField("nhanvien1");
+        userField = new TextField("nhanvien2");
         userField.setFont(Font.font("Segoe UI", 14));
         userField.setStyle("-fx-background-color: transparent; -fx-text-fill: " + C_TEXT + "; -fx-prompt-text-fill: " + C_PROMPT + "; -fx-highlight-fill: " + C_ACCENT + "; -fx-highlight-text-fill: white;");
         HBox.setHgrow(userField, Priority.ALWAYS);
@@ -294,11 +299,35 @@ public class ClientApp extends Application {
         passIcon.setIconColor(Color.web(C_MUTED));
 
         passField = new PasswordField();
-        passField.setText("Nhanvien1@");
+        passField.setText("Nhanvien2@");
         passField.setFont(Font.font("Segoe UI", 14));
         passField.setStyle("-fx-background-color: transparent; -fx-text-fill: " + C_TEXT + "; -fx-prompt-text-fill: " + C_PROMPT + "; -fx-highlight-fill: " + C_ACCENT + "; -fx-highlight-text-fill: white;");
         HBox.setHgrow(passField, Priority.ALWAYS);
-        passBox.getChildren().addAll(passIcon, passField);
+
+        TextField passVisible = new TextField(passField.getText());
+        passVisible.setFont(Font.font("Segoe UI", 14));
+        passVisible.setStyle("-fx-background-color: transparent; -fx-text-fill: " + C_TEXT + "; -fx-prompt-text-fill: " + C_PROMPT + "; -fx-highlight-fill: " + C_ACCENT + "; -fx-highlight-text-fill: white;");
+        passVisible.setManaged(false);
+        passVisible.setVisible(false);
+        HBox.setHgrow(passVisible, Priority.ALWAYS);
+        passField.textProperty().bindBidirectional(passVisible.textProperty());
+
+        Button eyeBtn = new Button();
+        FontIcon eyeIcon = new FontIcon(FontAwesomeSolid.EYE);
+        eyeIcon.setIconSize(14);
+        eyeIcon.setIconColor(Color.web(C_MUTED));
+        eyeBtn.setGraphic(eyeIcon);
+        eyeBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+        eyeBtn.setOnAction(e -> {
+            boolean show = !passVisible.isVisible();
+            passVisible.setVisible(show);
+            passVisible.setManaged(show);
+            passField.setVisible(!show);
+            passField.setManaged(!show);
+            eyeIcon.setIconCode(show ? FontAwesomeSolid.EYE_SLASH : FontAwesomeSolid.EYE);
+        });
+
+        passBox.getChildren().addAll(passIcon, passField, passVisible, eyeBtn);
 
         Button loginBtn = new Button("ĐĂNG NHẬP");
         loginBtn.setPrefHeight(48);
@@ -491,8 +520,7 @@ public class ClientApp extends Application {
         menuTitle.setPadding(new Insets(0, 0, 10, 14));
 
         Button homeBtn = sbBtn(FontAwesomeSolid.HOME, "Trang chủ");
-        Button inBtn = sbBtn(FontAwesomeSolid.SIGN_IN_ALT, "Chấm công vào");
-        Button outBtn = sbBtn(FontAwesomeSolid.SIGN_OUT_ALT, "Chấm công ra");
+        attendanceBtn = sbBtn(FontAwesomeSolid.CLOCK, "Chấm công");
         Button histBtn = sbBtn(FontAwesomeSolid.HISTORY, "Lịch sử");
         Button statBtn = sbBtn(FontAwesomeSolid.CHART_BAR, "Thống kê");
 
@@ -507,7 +535,7 @@ public class ClientApp extends Application {
         Button noteBtn = sbBtn(FontAwesomeSolid.STICKY_NOTE, "Ghi chú công việc");
 
         menu.getChildren().addAll(
-            menuTitle, homeBtn, inBtn, outBtn, histBtn, statBtn,
+            menuTitle, homeBtn, attendanceBtn, histBtn, statBtn,
             accountTitle, passBtn, leaveBtn, shiftBtn, noteBtn
         );
 
@@ -532,8 +560,7 @@ public class ClientApp extends Application {
         }
 
         homeBtn.setOnAction(e -> { setActive(homeBtn); showHome(); });
-        inBtn.setOnAction(e -> { setActive(inBtn); showCheckIn(); });
-        outBtn.setOnAction(e -> { setActive(outBtn); showCheckOut(); });
+        attendanceBtn.setOnAction(e -> { setActive(attendanceBtn); showAttendance(); });
         histBtn.setOnAction(e -> { setActive(histBtn); showHistory(); });
         statBtn.setOnAction(e -> { setActive(statBtn); showStats(); });
         passBtn.setOnAction(e -> { setActive(passBtn); showChangePassword(); });
@@ -675,6 +702,7 @@ public class ClientApp extends Application {
     }
 
     private void setActive(Button btn) {
+        stopAttendanceTicker();
         if (activeBtn != null) {
             setInactive(activeBtn);
             if (activeBtn.getGraphic() instanceof FontIcon) {
@@ -740,10 +768,14 @@ public class ClientApp extends Application {
         HBox stats = new HBox(20);
         stats.setMaxWidth(Double.MAX_VALUE);
 
+        Label inVal = new Label("Đang tải...");
+        Label outVal = new Label("Đang tải...");
+        Label statusVal = new Label("Đang tải...");
+
         VBox s1 = miniCard(FontAwesomeSolid.CALENDAR_DAY, "Hôm nay", getTodayShort(), C_BLUE);
-        VBox s2 = miniCard(FontAwesomeSolid.CHECK_CIRCLE, "Check-in", "Sẵn sàng", C_GREEN);
-        VBox s3 = miniCard(FontAwesomeSolid.CLOCK, "Check-out", "Chưa check-out", C_ORANGE);
-        VBox s4 = miniCard(FontAwesomeSolid.HISTORY, "Lịch sử", "Xem chi tiết", C_VIOLET);
+        VBox s2 = miniCard(FontAwesomeSolid.SIGN_IN_ALT, "Giờ vào", inVal, C_GREEN);
+        VBox s3 = miniCard(FontAwesomeSolid.SIGN_OUT_ALT, "Giờ ra", outVal, C_ORANGE);
+        VBox s4 = miniCard(FontAwesomeSolid.CHECK_CIRCLE, "Trạng thái", statusVal, C_ACCENT);
 
         HBox.setHgrow(s1, Priority.ALWAYS);
         HBox.setHgrow(s2, Priority.ALWAYS);
@@ -759,9 +791,12 @@ public class ClientApp extends Application {
         HBox feats = new HBox(20);
         feats.setMaxWidth(Double.MAX_VALUE);
 
-        VBox f1 = bigCard(FontAwesomeSolid.SIGN_IN_ALT, "CHECK-IN", "Bắt đầu làm việc", C_GREEN, () -> { setActive(null); showCheckIn(); });
-        VBox f2 = bigCard(FontAwesomeSolid.SIGN_OUT_ALT, "CHECK-OUT", "Kết thúc làm việc", C_ORANGE, () -> { setActive(null); showCheckOut(); });
-        VBox f3 = bigCard(FontAwesomeSolid.HISTORY, "LỊCH SỬ", "Xem chấm công", C_BLUE, () -> { setActive(null); showHistory(); });
+        VBox f1 = bigCard(FontAwesomeSolid.CLOCK, "CHẤM CÔNG", "Điểm danh vào / ra hôm nay", C_GREEN,
+            () -> { setActive(attendanceBtn); showAttendance(); });
+        VBox f2 = bigCard(FontAwesomeSolid.HISTORY, "LỊCH SỬ", "Xem chấm công", C_BLUE,
+            () -> { setActive(null); showHistory(); });
+        VBox f3 = bigCard(FontAwesomeSolid.CHART_BAR, "THỐNG KÊ", "Số liệu cá nhân", C_VIOLET,
+            () -> { setActive(null); showStats(); });
 
         HBox.setHgrow(f1, Priority.ALWAYS);
         HBox.setHgrow(f2, Priority.ALWAYS);
@@ -769,9 +804,37 @@ public class ClientApp extends Application {
 
         feats.getChildren().addAll(f1, f2, f3);
         contentArea.getChildren().addAll(welcome, st, stats, ft, feats);
+
+        loadTodayStatus(stt -> {
+            if (stt.error != null) {
+                inVal.setText("—");
+                outVal.setText("—");
+                statusVal.setText("Mất kết nối");
+                statusVal.setTextFill(Color.web(C_RED));
+                return;
+            }
+
+            inVal.setText(stt.checkIn.isEmpty() ? "Chưa vào" : stt.checkIn);
+            outVal.setText(stt.checkOut.isEmpty() ? "Chưa ra" : stt.checkOut);
+
+            if ("WORKING".equals(stt.status)) {
+                statusVal.setText("Đang làm việc");
+                statusVal.setTextFill(Color.web(C_GREEN));
+            } else if ("COMPLETED".equals(stt.status)) {
+                statusVal.setText("Hoàn thành");
+                statusVal.setTextFill(Color.web(C_BLUE));
+            } else {
+                statusVal.setText("Chưa check-in");
+                statusVal.setTextFill(Color.web(C_ORANGE));
+            }
+        });
     }
 
     private VBox miniCard(FontAwesomeSolid icon, String title, String value, String color) {
+        return miniCard(icon, title, new Label(value), color);
+    }
+
+    private VBox miniCard(FontAwesomeSolid icon, String title, Label v, String color) {
         VBox card = new VBox(14);
         card.setPadding(new Insets(24, 26, 24, 26));
         card.setMinWidth(220);
@@ -797,7 +860,6 @@ public class ClientApp extends Application {
         t.setTextFill(Color.web(C_MUTED));
         top.getChildren().addAll(iconCircle, t);
 
-        Label v = new Label(value);
         v.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
         v.setTextFill(Color.web(color));
 
@@ -838,105 +900,387 @@ public class ClientApp extends Application {
     }
 
     // ============================================================
-    // CHECK-IN / CHECK-OUT
+    // CHẤM CÔNG — MỘT TRANG DUY NHẤT, STATE-AWARE
     // ============================================================
-    private void showCheckIn() {
-        pageTitle.setText("Chấm công vào");
-        pageSubtitle.setText("Xác nhận giờ vào làm việc");
-        contentArea.getChildren().clear();
-        contentArea.getChildren().add(
-            buildActionCard(FontAwesomeSolid.SIGN_IN_ALT, "Chấm công vào",
-                "Bấm nút bên dưới để ghi nhận giờ vào làm việc.",
-                "XÁC NHẬN CHECK-IN",
-                C_GREEN,
-                C_GREEN, "checkin")
-        );
+    private static class TodayStatus {
+        String date = "";
+        String checkIn = "";
+        String checkOut = "";
+        String status = "NOT_CHECKED_IN";
+        String serverTime = "";
+        String error = null;
+        int workedMinutes = 0;
+
+        boolean isWorking()      { return "WORKING".equals(status); }
+        boolean isCompleted()    { return "COMPLETED".equals(status); }
+        boolean isNotCheckedIn() { return !isWorking() && !isCompleted(); }
     }
 
-    private void showCheckOut() {
-        pageTitle.setText("Chấm công ra");
-        pageSubtitle.setText("Xác nhận giờ ra về");
+    private void showAttendance() {
+        pageTitle.setText("Chấm công hôm nay");
+        pageSubtitle.setText("Điểm danh vào / ra — giờ do server ghi nhận");
         contentArea.getChildren().clear();
-        contentArea.getChildren().add(
-            buildActionCard(FontAwesomeSolid.SIGN_OUT_ALT, "Chấm công ra",
-                "Bấm nút bên dưới để ghi nhận giờ ra về.",
-                "XÁC NHẬN CHECK-OUT",
-                C_ORANGE,
-                C_ORANGE, "checkout")
-        );
-    }
 
-    private VBox buildActionCard(FontAwesomeSolid icon, String titleStr, String descStr,
-                                  String btnStr, String btnColorHex, String accentColor,
-                                  String api) {
-        VBox card = new VBox(24);
-        card.setAlignment(Pos.CENTER);
-        card.setPrefWidth(560);
-        card.setMaxWidth(560);
-        card.setPadding(new Insets(50));
-        card.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 18; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 18; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 16, 0, 0, 6);");
+        VBox main = new VBox(20);
 
-        StackPane iconCircle = new StackPane();
-        iconCircle.setPrefSize(110, 110);
-        iconCircle.setMaxSize(110, 110);
-        iconCircle.setStyle("-fx-background-color: " + accentColor + "22; -fx-background-radius: 55;");
+        // ================= HERO =================
+        HBox hero = new HBox(28);
+        hero.setPadding(new Insets(28, 32, 28, 32));
+        hero.setAlignment(Pos.CENTER_LEFT);
+        hero.setStyle("-fx-background-color: linear-gradient(to right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 18; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.35), 20, 0, 0, 8);");
 
-        FontIcon icn = new FontIcon(icon);
-        icn.setIconSize(50);
-        icn.setIconColor(Color.web(accentColor));
-        iconCircle.getChildren().add(icn);
+        VBox heroLeft = new VBox(9);
+        Label heroDate = new Label(getTodayString());
+        heroDate.setFont(Font.font("Segoe UI", 14));
+        heroDate.setTextFill(Color.web("#cffafe"));
 
-        Label title = new Label(titleStr);
-        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
-        title.setTextFill(Color.web(C_TEXT));
+        Label heroStatus = new Label("ĐANG TẢI...");
+        heroStatus.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
+        heroStatus.setTextFill(Color.WHITE);
+        heroStatus.setPadding(new Insets(7, 18, 7, 18));
+        heroStatus.setStyle("-fx-background-color: rgba(255,255,255,0.22); -fx-background-radius: 20;");
 
-        Label desc = new Label(descStr);
-        desc.setFont(Font.font("Segoe UI", 14));
-        desc.setTextFill(Color.web(C_MUTED));
-        desc.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        Label heroHint = new Label("Đang kiểm tra trạng thái chấm công của bạn...");
+        heroHint.setFont(Font.font("Segoe UI", 13));
+        heroHint.setTextFill(Color.web("#e0f2fe"));
+        heroHint.setWrapText(true);
+        heroLeft.getChildren().addAll(heroDate, heroStatus, heroHint);
 
-        Label clock = new Label("--:--:--");
-        clock.setFont(Font.font("Consolas", FontWeight.BOLD, 60));
-        clock.setTextFill(Color.web(accentColor));
+        Region heroSp = new Region();
+        HBox.setHgrow(heroSp, Priority.ALWAYS);
 
-        Thread t = new Thread(() -> {
-            while (true) {
-                try { Thread.sleep(1000); } catch (InterruptedException e) { break; }
-                Platform.runLater(() -> {
-                    java.time.LocalTime now = java.time.LocalTime.now();
-                    clock.setText(String.format("%02d:%02d:%02d", now.getHour(), now.getMinute(), now.getSecond()));
-                });
-            }
-        });
-        t.setDaemon(true);
-        t.start();
+        VBox clockBox = new VBox(2);
+        clockBox.setAlignment(Pos.CENTER_RIGHT);
+        Label bigClock = new Label("--:--:--");
+        bigClock.setFont(Font.font("Consolas", FontWeight.BOLD, 42));
+        bigClock.setTextFill(Color.WHITE);
+        Label clockNote = new Label("Giờ máy chủ: --:--:--");
+        clockNote.setFont(Font.font("Consolas", 11));
+        clockNote.setTextFill(Color.web("#cffafe"));
+        clockBox.getChildren().addAll(bigClock, clockNote);
 
-        Button btn = new Button(btnStr);
-        btn.setPrefHeight(58);
-        btn.setPrefWidth(360);
-        btn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
-        btn.setStyle("-fx-background-color: " + btnColorHex + "; -fx-text-fill: white; -fx-background-radius: 12; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, " + btnColorHex + "55, 12, 0, 0, 4);");
-        btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: " + btnColorHex + "; -fx-text-fill: white; -fx-background-radius: 12; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, " + btnColorHex + "88, 18, 0, 0, 8);"));
-        btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: " + btnColorHex + "; -fx-text-fill: white; -fx-background-radius: 12; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, " + btnColorHex + "55, 12, 0, 0, 4);"));
+        hero.getChildren().addAll(heroLeft, heroSp, clockBox);
+
+        // ================= INFO CARDS =================
+        HBox infoRow = new HBox(16);
+
+        Label inValue = new Label("--:--");
+        Label outValue = new Label("--:--");
+        Label workValue = new Label("--");
+        Label stateValue = new Label("--");
+
+        VBox c1 = attendanceInfoCard(FontAwesomeSolid.SIGN_IN_ALT, "GIỜ VÀO", inValue, C_GREEN);
+        VBox c2 = attendanceInfoCard(FontAwesomeSolid.SIGN_OUT_ALT, "GIỜ RA", outValue, C_ORANGE);
+        VBox c3 = attendanceInfoCard(FontAwesomeSolid.CLOCK, "THỜI GIAN LÀM", workValue, C_BLUE);
+        VBox c4 = attendanceInfoCard(FontAwesomeSolid.CHECK_CIRCLE, "TRẠNG THÁI", stateValue, C_ACCENT);
+
+        for (VBox c : new VBox[]{c1, c2, c3, c4}) HBox.setHgrow(c, Priority.ALWAYS);
+        infoRow.getChildren().addAll(c1, c2, c3, c4);
+
+        // ================= ACTION =================
+        HBox actionRow = new HBox(20);
+
+        VBox actionCard = new VBox(12);
+        actionCard.setPadding(new Insets(26, 28, 26, 28));
+        actionCard.setMaxWidth(Double.MAX_VALUE);
+        actionCard.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 16; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 16; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 12, 0, 0, 4);");
+        HBox.setHgrow(actionCard, Priority.ALWAYS);
+
+        Label actionTitle = new Label("Một nút duy nhất — đúng trạng thái");
+        actionTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        actionTitle.setTextFill(Color.web(C_TEXT));
+
+        Label actionDesc = new Label("Lần đầu trong ngày: CHECK-IN. Khi kết thúc: CHECK-OUT. Hệ thống tự đổi nút theo trạng thái thực tế.");
+        actionDesc.setFont(Font.font("Segoe UI", 13));
+        actionDesc.setTextFill(Color.web(C_MUTED));
+        actionDesc.setWrapText(true);
+
+        Button actionBtn = new Button("ĐANG KIỂM TRA...");
+        actionBtn.setPrefHeight(56);
+        actionBtn.setMaxWidth(Double.MAX_VALUE);
+        actionBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
+        actionBtn.setDisable(true);
 
         Label result = new Label("");
-        result.setFont(Font.font("Consolas", 14));
+        result.setFont(Font.font("Segoe UI", 13));
         result.setWrapText(true);
 
-        btn.setOnAction(e -> doCheck(api, result));
-        card.getChildren().addAll(iconCircle, title, desc, clock, btn, result);
+        actionCard.getChildren().addAll(actionTitle, actionDesc, actionBtn, result);
+
+        VBox ruleCard = new VBox(12);
+        ruleCard.setPrefWidth(360);
+        ruleCard.setMinWidth(320);
+        ruleCard.setPadding(new Insets(24, 26, 24, 26));
+        ruleCard.setStyle("-fx-background-color: #f0fdfa; -fx-background-radius: 16; -fx-border-color: #99f6e4; -fx-border-radius: 16; -fx-border-width: 1;");
+
+        Label ruleTitle = new Label("📌 Quy tắc chấm công");
+        ruleTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
+        ruleTitle.setTextFill(Color.web(C_TEAL));
+
+        Label r1 = ruleLabel("• Mỗi ngày chỉ CHECK-IN 1 lần.");
+        Label r2 = ruleLabel("• Phải CHECK-IN trước khi CHECK-OUT.");
+        Label r3 = ruleLabel("• Giờ vào / ra do SERVER ghi nhận, không sửa được từ client.");
+        Label r4 = ruleLabel("• Ca làm chuẩn: 08:00 — 17:00.");
+        ruleCard.getChildren().addAll(ruleTitle, r1, r2, r3, r4);
+
+        actionRow.getChildren().addAll(actionCard, ruleCard);
+
+        // ================= RECENT HISTORY =================
+        VBox historyCard = new VBox(14);
+        historyCard.setPadding(new Insets(24, 26, 24, 26));
+        historyCard.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 16; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 16; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 12, 0, 0, 4);");
+
+        HBox historyHeader = new HBox(12);
+        historyHeader.setAlignment(Pos.CENTER_LEFT);
+        Label historyTitle = new Label("📅 5 ngày chấm công gần nhất");
+        historyTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 17));
+        historyTitle.setTextFill(Color.web(C_TEXT));
+        Region historySp = new Region();
+        HBox.setHgrow(historySp, Priority.ALWAYS);
+        Label recentInfo = new Label("Đang tải...");
+        recentInfo.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+        recentInfo.setTextFill(Color.web(C_ACCENT));
+        historyHeader.getChildren().addAll(historyTitle, historySp, recentInfo);
+
+        TableView<HistRow> recentTable = new TableView<>();
+        recentTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        recentTable.setPrefHeight(230);
+
+        TableColumn<HistRow, String> rc1 = new TableColumn<>("Ngày");
+        rc1.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().date));
+        TableColumn<HistRow, String> rc2 = new TableColumn<>("Giờ vào");
+        rc2.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().in));
+        TableColumn<HistRow, String> rc3 = new TableColumn<>("Giờ ra");
+        rc3.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().out));
+        TableColumn<HistRow, String> rc4 = new TableColumn<>("Tổng giờ");
+        rc4.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().total));
+        TableColumn<HistRow, String> rc5 = new TableColumn<>("Trạng thái");
+        rc5.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().status));
+        rc5.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) { setText(null); setStyle(""); return; }
+                setText(item);
+                if (item.contains("Đủ giờ")) setStyle("-fx-text-fill: " + C_GREEN + "; -fx-font-weight: bold;");
+                else if (item.contains("Chưa")) setStyle("-fx-text-fill: " + C_ORANGE + "; -fx-font-weight: bold;");
+                else if (item.contains("muộn")) setStyle("-fx-text-fill: " + C_RED + "; -fx-font-weight: bold;");
+            }
+        });
+
+        recentTable.getColumns().addAll(rc1, rc2, rc3, rc4, rc5);
+        historyCard.getChildren().addAll(historyHeader, recentTable);
+
+        main.getChildren().addAll(hero, infoRow, actionRow, historyCard);
+        contentArea.getChildren().add(main);
+
+        final TodayStatus[] current = { new TodayStatus() };
+
+        java.util.function.Consumer<TodayStatus> apply = st -> {
+            current[0] = st;
+
+            if (st.error != null) {
+                heroStatus.setText("MẤT KẾT NỐI");
+                heroHint.setText("Không kết nối được server: " + st.error);
+                inValue.setText("—");
+                outValue.setText("—");
+                workValue.setText("—");
+                stateValue.setText("Lỗi");
+                stateValue.setTextFill(Color.web(C_RED));
+                actionBtn.setText("THỬ LẠI KẾT NỐI");
+                styleActionButton(actionBtn, C_BLUE);
+                actionBtn.setDisable(false);
+                return;
+            }
+
+            inValue.setText(st.checkIn.isEmpty() ? "Chưa vào" : st.checkIn);
+            outValue.setText(st.checkOut.isEmpty() ? "Chưa ra" : st.checkOut);
+            clockNote.setText("Giờ máy chủ: " + (st.serverTime.isEmpty() ? "--:--:--" : st.serverTime));
+
+            if (st.isNotCheckedIn()) {
+                heroStatus.setText("CHƯA CHECK-IN");
+                heroHint.setText("Nhấn CHECK-IN để bắt đầu ngày làm việc. Giờ vào sẽ do server ghi lại.");
+                workValue.setText("—");
+                stateValue.setText("Chưa vào");
+                stateValue.setTextFill(Color.web(C_ORANGE));
+                actionBtn.setText("CHECK-IN NGAY");
+                styleActionButton(actionBtn, C_GREEN);
+                actionBtn.setDisable(false);
+            } else if (st.isWorking()) {
+                heroStatus.setText("ĐANG LÀM VIỆC");
+                heroHint.setText("Đã ghi nhận giờ vào. Khi kết thúc, nhấn CHECK-OUT để chốt giờ ra.");
+                workValue.setText(formatWorked(minutesBetween(st.checkIn, java.time.LocalTime.now())));
+                stateValue.setText("Đang làm");
+                stateValue.setTextFill(Color.web(C_GREEN));
+                actionBtn.setText("CHECK-OUT NGAY");
+                styleActionButton(actionBtn, C_ORANGE);
+                actionBtn.setDisable(false);
+            } else {
+                heroStatus.setText("ĐÃ HOÀN THÀNH");
+                heroHint.setText("Hôm nay bạn đã chấm công đầy đủ. Hẹn gặp lại vào ngày mai!");
+                workValue.setText(formatWorked(st.workedMinutes));
+                stateValue.setText("Hoàn thành");
+                stateValue.setTextFill(Color.web(C_BLUE));
+                actionBtn.setText("ĐÃ HOÀN THÀNH HÔM NAY");
+                styleActionButton(actionBtn, C_BLUE);
+                actionBtn.setDisable(true);
+            }
+        };
+
+        Runnable loadRecent = () -> new Thread(() -> {
+            try {
+                String from = java.time.LocalDate.now().minusDays(6).toString();
+                String to = java.time.LocalDate.now().toString();
+                String res = http.get("/api/history?page=1&limit=5&from=" + from + "&to=" + to);
+                ObservableList<HistRow> rows = parseHistory(res);
+                Platform.runLater(() -> {
+                    recentTable.setItems(rows);
+                    recentInfo.setText("📊 " + rows.size() + " bản ghi");
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> recentInfo.setText("❌ " + ex.getMessage()));
+            }
+        }).start();
+
+        Runnable refresh = () -> {
+            actionBtn.setDisable(true);
+            actionBtn.setText("ĐANG KIỂM TRA...");
+            loadTodayStatus(st -> {
+                apply.accept(st);
+                loadRecent.run();
+            });
+        };
+
+        actionBtn.setOnAction(e -> {
+            TodayStatus st = current[0];
+            if (st == null || st.error != null) {
+                refresh.run();
+                return;
+            }
+            if (st.isCompleted()) return;
+            confirmAttendance(st, actionBtn, result, refresh);
+        });
+
+        // Đồng hồ realtime + thời gian làm việc tăng theo giây
+        stopAttendanceTicker();
+        attendanceTicker = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+            java.time.LocalTime now = java.time.LocalTime.now();
+            bigClock.setText(String.format("%02d:%02d:%02d", now.getHour(), now.getMinute(), now.getSecond()));
+
+            TodayStatus st = current[0];
+            if (st != null && st.error != null && !st.error.isEmpty()) return;
+            if (st != null && st.isWorking() && !st.checkIn.isEmpty()) {
+                workValue.setText(formatWorked(minutesBetween(st.checkIn, now)));
+            }
+        }));
+        attendanceTicker.setCycleCount(Timeline.INDEFINITE);
+        attendanceTicker.play();
+
+        refresh.run();
+    }
+
+    private Label ruleLabel(String text) {
+        Label l = new Label(text);
+        l.setFont(Font.font("Segoe UI", 12.5));
+        l.setTextFill(Color.web("#0f766e"));
+        l.setWrapText(true);
+        return l;
+    }
+
+    private VBox attendanceInfoCard(FontAwesomeSolid icon, String title, Label value, String color) {
+        VBox card = new VBox(8);
+        card.setPadding(new Insets(18, 20, 18, 20));
+        card.setMaxWidth(Double.MAX_VALUE);
+        card.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 14; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 14; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 3);");
+
+        HBox top = new HBox(9);
+        top.setAlignment(Pos.CENTER_LEFT);
+        FontIcon icn = new FontIcon(icon);
+        icn.setIconSize(13);
+        icn.setIconColor(Color.web(color));
+        Label t = new Label(title);
+        t.setFont(Font.font("Segoe UI", FontWeight.BOLD, 10.5));
+        t.setTextFill(Color.web(C_MUTED));
+        top.getChildren().addAll(icn, t);
+
+        value.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        value.setTextFill(Color.web(color));
+
+        card.getChildren().addAll(top, value);
         return card;
     }
 
-    private void doCheck(String action, Label result) {
-        result.setText("⏳ Đang xử lý...");
+    private void styleActionButton(Button btn, String color) {
+        btn.setStyle("-fx-background-color: " + color + "; -fx-text-fill: white; -fx-background-radius: 12; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, " + color + "55, 12, 0, 0, 4);");
+    }
+
+    private void loadTodayStatus(java.util.function.Consumer<TodayStatus> callback) {
+        new Thread(() -> {
+            TodayStatus st = new TodayStatus();
+            try {
+                String res = http.get("/api/attendance/today");
+                String err = JsonUtil.getString(res, "error");
+                if (err != null) {
+                    st.error = err;
+                } else {
+                    st.date = extract(res, "date");
+                    st.checkIn = extract(res, "checkIn");
+                    st.checkOut = extract(res, "checkOut");
+                    st.status = extract(res, "status");
+                    st.serverTime = extract(res, "serverTime");
+                    st.workedMinutes = extractInt(res, "workedMinutes");
+                    if (st.status == null || st.status.isEmpty()) st.status = "NOT_CHECKED_IN";
+                }
+            } catch (Exception ex) {
+                st.error = ex.getMessage();
+            }
+            Platform.runLater(() -> callback.accept(st));
+        }).start();
+    }
+
+    private void confirmAttendance(TodayStatus st, Button actionBtn, Label result, Runnable refresh) {
+        boolean isCheckIn = st.isNotCheckedIn();
+        String actionName = isCheckIn ? "CHECK-IN" : "CHECK-OUT";
+        String now = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"));
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.initOwner(primaryStage);
+        alert.setTitle("Xác nhận chấm công");
+        alert.setHeaderText("Xác nhận " + actionName);
+        alert.setContentText(
+            "Thời điểm hiện tại: " + now + "\n\n" +
+            (isCheckIn
+                ? "Hệ thống sẽ ghi nhận GIỜ VÀO và bắt đầu tính thời gian làm việc."
+                : "Hệ thống sẽ ghi nhận GIỜ RA và kết thúc ngày làm việc.") +
+            "\n\n⚠ Giờ chấm công do SERVER ghi nhận, không thể sửa từ client."
+        );
+        alert.getDialogPane().setMinWidth(480);
+        alert.getDialogPane().getStylesheets().add(
+            "data:text/css," + java.net.URLEncoder.encode(getGlobalCss(), java.nio.charset.StandardCharsets.UTF_8));
+
+        ButtonType ok = new ButtonType("Xác nhận " + actionName, ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancel = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(ok, cancel);
+
+        alert.showAndWait().ifPresent(bt -> {
+            if (bt == ok) {
+                performAttendance(isCheckIn ? "checkin" : "checkout", actionBtn, result, refresh);
+            }
+        });
+    }
+
+    private void performAttendance(String action, Button actionBtn, Label result, Runnable refresh) {
+        actionBtn.setDisable(true);
+        result.setText("⏳ Đang gửi yêu cầu...");
         result.setTextFill(Color.web(C_MUTED));
+
         new Thread(() -> {
             try {
                 String res = http.post("/api/" + action, "{}");
                 String msg = JsonUtil.getString(res, "msg");
                 String err = JsonUtil.getString(res, "error");
                 String time = JsonUtil.getString(res, "time");
+
                 Platform.runLater(() -> {
                     if (msg != null) {
                         result.setText("✅ " + msg + (time != null ? " — " + time : ""));
@@ -945,14 +1289,40 @@ public class ClientApp extends Application {
                         result.setText("❌ " + (err != null ? err : res));
                         result.setTextFill(Color.web(C_RED));
                     }
+                    refresh.run();
                 });
             } catch (Exception ex) {
                 Platform.runLater(() -> {
-                    result.setText("❌ Lỗi: " + ex.getMessage());
+                    result.setText("❌ Lỗi kết nối: " + ex.getMessage());
                     result.setTextFill(Color.web(C_RED));
+                    actionBtn.setDisable(false);
                 });
             }
         }).start();
+    }
+
+    private void stopAttendanceTicker() {
+        if (attendanceTicker != null) {
+            attendanceTicker.stop();
+            attendanceTicker = null;
+        }
+    }
+
+    private long minutesBetween(String from, java.time.LocalTime to) {
+        try {
+            String s = from.length() >= 8 ? from.substring(0, 8) : from;
+            java.time.LocalTime start = java.time.LocalTime.parse(s);
+            long mins = java.time.Duration.between(start, to).toMinutes();
+            if (mins < 0) mins += 24 * 60;
+            return Math.max(0, mins);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private String formatWorked(long minutes) {
+        if (minutes < 0) minutes = 0;
+        return String.format("%d giờ %02d phút", minutes / 60, minutes % 60);
     }
 
     // ============================================================

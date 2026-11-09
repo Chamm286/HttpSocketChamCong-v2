@@ -1,5 +1,7 @@
 package com.httpchamcong.model;
 
+import com.httpchamcong.util.JsonUtil;
+
 public class ChamCong {
     private String username;
     private String fullName;
@@ -33,11 +35,11 @@ public class ChamCong {
     public String toJson() {
         return String.format(
             "{\"username\":\"%s\",\"fullName\":\"%s\",\"date\":\"%s\",\"checkIn\":\"%s\",\"checkOut\":\"%s\"}",
-            username,
-            fullName == null ? "" : fullName,
-            date,
-            checkIn == null ? "" : checkIn,
-            checkOut == null ? "" : checkOut
+            JsonUtil.escape(username),
+            JsonUtil.escape(fullName),
+            JsonUtil.escape(date),
+            JsonUtil.escape(checkIn),
+            JsonUtil.escape(checkOut)
         );
     }
 

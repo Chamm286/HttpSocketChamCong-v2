@@ -8,6 +8,7 @@ import com.httpchamcong.model.User;
 import com.httpchamcong.server.HttpRequestParser;
 import com.httpchamcong.server.HttpResponseBuilder;
 import com.httpchamcong.util.SessionManager;
+import com.httpchamcong.util.ValidationUtil;
 
 import java.util.List;
 
@@ -75,6 +76,9 @@ public class AdminController {
         if (username == null || password == null || fullName == null)
             return new HttpResponseBuilder().status(400).json("{\"error\":\"Thieu thong tin\"}");
 
+        if (!ValidationUtil.isValidRole(role))
+            return new HttpResponseBuilder().status(400).json("{\"error\":\"role phai la ADMIN hoac USER\"}");
+
         if (UserDAO.findByUsername(username) != null)
             return new HttpResponseBuilder().status(400).json("{\"error\":\"Username da ton tai\"}");
 
@@ -97,6 +101,9 @@ public class AdminController {
 
         if (username == null || fullName == null)
             return new HttpResponseBuilder().status(400).json("{\"error\":\"Thieu thong tin\"}");
+
+        if (role != null && !ValidationUtil.isValidRole(role))
+            return new HttpResponseBuilder().status(400).json("{\"error\":\"role phai la ADMIN hoac USER\"}");
 
         User upd = new User(username, "", fullName, role == null ? "USER" : role);
         return UserDAO.update(upd)
@@ -135,6 +142,9 @@ public class AdminController {
 
         if (fullName == null && role == null)
             return new HttpResponseBuilder().status(400).json("{\"error\":\"Khong co du lieu cap nhat\"}");
+
+        if (role != null && !ValidationUtil.isValidRole(role))
+            return new HttpResponseBuilder().status(400).json("{\"error\":\"role phai la ADMIN hoac USER\"}");
 
         User existing = UserDAO.findByUsername(username);
         if (existing == null)

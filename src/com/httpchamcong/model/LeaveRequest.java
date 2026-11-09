@@ -1,5 +1,7 @@
 package com.httpchamcong.model;
 
+import com.httpchamcong.util.JsonUtil;
+
 public class LeaveRequest {
     private int id;
     private String username;
@@ -41,10 +43,10 @@ public class LeaveRequest {
         return String.format(
             "{\"id\":%d,\"username\":\"%s\",\"fullName\":\"%s\"," +
             "\"startDate\":\"%s\",\"endDate\":\"%s\",\"reason\":\"%s\",\"status\":\"%s\"}",
-            id, username, fullName == null ? "" : fullName,
-            startDate, endDate,
-            reason == null ? "" : reason.replace("\"", "'"),
-            status
+            id, JsonUtil.escape(username), JsonUtil.escape(fullName),
+            JsonUtil.escape(startDate), JsonUtil.escape(endDate),
+            JsonUtil.escape(reason),
+            JsonUtil.escape(status)
         );
     }
 } 

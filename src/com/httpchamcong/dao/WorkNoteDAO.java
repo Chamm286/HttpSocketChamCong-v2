@@ -1,4 +1,4 @@
-﻿package com.httpchamcong.dao;
+package com.httpchamcong.dao;
 
 import com.httpchamcong.model.WorkNote;
 import java.sql.*;
@@ -78,6 +78,20 @@ public class WorkNoteDAO {
             while (rs.next()) list.add(mapRow(rs, true));
         } catch (SQLException e) { e.printStackTrace(); }
         return list;
+    }
+
+    public static WorkNote findById(int id) {
+        String sql = "SELECT wn.*, u.full_name FROM work_notes wn " +
+                     "LEFT JOIN users u ON u.username = wn.username " +
+                     "WHERE wn.id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs, true);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return null;
     }
 
     public static boolean deleteById(int id) {

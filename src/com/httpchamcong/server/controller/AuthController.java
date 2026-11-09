@@ -44,8 +44,13 @@ public class AuthController {
         String token = UUID.randomUUID().toString();
         SessionManager.createSession(token, u);
 
-        return new HttpResponseBuilder().status(200).json(
-            "{\"token\":\"" + token + "\",\"user\":" + u.toJson() + "}"
-        );
+        // Token được trả cả trong body (tương thích Web client cũ) và trong header.
+        // X-Session-Token dễ đọc bằng fetch(); Set-Cookie mô phỏng session cookie.
+        return new HttpResponseBuilder().status(200)
+            .header("X-Session-Token", token)
+            .header("X-Auth-Scheme", "Bearer")
+            .header("Set-Cookie", "CC_SESSION=" + token + "; Path=/; HttpOnly; SameSite=Lax")
+            .header("Cache-Control", "no-store")
+            .json("{\"token\":\"" + token + "\",\"user\":" + u.toJson() + "}");
     }
 } 

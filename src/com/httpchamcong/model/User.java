@@ -1,4 +1,6 @@
- package com.httpchamcong.model;
+package com.httpchamcong.model;
+
+import com.httpchamcong.util.JsonUtil;
 
 public class User {
     private String username;
@@ -21,7 +23,7 @@ public class User {
     public String toJson() {
         return String.format(
             "{\"username\":\"%s\",\"fullName\":\"%s\",\"role\":\"%s\"}",
-            username, fullName, role
+            JsonUtil.escape(username), JsonUtil.escape(fullName), JsonUtil.escape(role)
         );
     }
 

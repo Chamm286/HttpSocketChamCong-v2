@@ -1,4 +1,4 @@
-﻿package com.httpchamcong.server.controller;
+package com.httpchamcong.server.controller;
 
 import com.httpchamcong.dao.WorkNoteDAO;
 import com.httpchamcong.model.User;
@@ -7,6 +7,7 @@ import com.httpchamcong.server.HttpRequestParser;
 import com.httpchamcong.server.HttpResponseBuilder;
 import com.httpchamcong.util.JsonUtil;
 import com.httpchamcong.util.SessionManager;
+import com.httpchamcong.util.ValidationUtil;
 
 import java.util.List;
 
@@ -26,6 +27,10 @@ public class NoteController {
         if (date == null || date.isEmpty() || content == null || content.isEmpty())
             return new HttpResponseBuilder().status(400)
                 .json("{\"error\":\"Thieu ngay hoac noi dung\"}");
+
+        if (!ValidationUtil.isIsoDate(date))
+            return new HttpResponseBuilder().status(400)
+                .json("{\"error\":\"noteDate phai theo dinh dang yyyy-MM-dd\"}");
 
         WorkNote note = new WorkNote(u.getUsername(), date, content, plan);
         boolean ok = WorkNoteDAO.saveOrUpdate(note);
@@ -81,15 +86,25 @@ public class NoteController {
             return new HttpResponseBuilder().status(401)
                 .json("{\"error\":\"Chua dang nhap\"}");
 
+        int id;
         try {
-            int id = Integer.parseInt(idStr);
-            boolean ok = WorkNoteDAO.deleteById(id);
-            return ok
-                ? new HttpResponseBuilder().status(204).body("")
-                : new HttpResponseBuilder().status(404).json("{\"error\":\"Khong tim thay\"}");
+            id = Integer.parseInt(idStr);
         } catch (Exception e) {
             return new HttpResponseBuilder().status(400).json("{\"error\":\"id khong hop le\"}");
         }
+
+        WorkNote note = WorkNoteDAO.findById(id);
+        if (note == null)
+            return new HttpResponseBuilder().status(404).json("{\"error\":\"Khong tim thay\"}");
+
+        if (!note.getUsername().equals(u.getUsername()) && !"ADMIN".equals(u.getRole()))
+            return new HttpResponseBuilder().status(403)
+                .json("{\"error\":\"Chi duoc xoa ghi chu cua minh\"}");
+
+        boolean ok = WorkNoteDAO.deleteById(id);
+        return ok
+            ? new HttpResponseBuilder().status(204).body("")
+            : new HttpResponseBuilder().status(404).json("{\"error\":\"Khong tim thay\"}");
     }
 
     private HttpResponseBuilder buildListResponse(List<WorkNote> list) {

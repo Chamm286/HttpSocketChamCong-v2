@@ -7,7 +7,9 @@ import com.httpchamcong.server.HttpRequestParser;
 import com.httpchamcong.server.HttpResponseBuilder;
 import com.httpchamcong.util.JsonUtil;
 import com.httpchamcong.util.SessionManager;
+import com.httpchamcong.util.ValidationUtil;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class LeaveController {
@@ -27,6 +29,14 @@ public class LeaveController {
         if (startDate == null || endDate == null)
             return new HttpResponseBuilder().status(400)
                 .json("{\"error\":\"Thieu ngay bat dau/ket thuc\"}");
+
+        if (!ValidationUtil.isIsoDate(startDate) || !ValidationUtil.isIsoDate(endDate))
+            return new HttpResponseBuilder().status(400)
+                .json("{\"error\":\"Ngay phai theo dinh dang yyyy-MM-dd\"}");
+
+        if (LocalDate.parse(startDate).isAfter(LocalDate.parse(endDate)))
+            return new HttpResponseBuilder().status(400)
+                .json("{\"error\":\"Ngay ket thuc phai sau hoac bang ngay bat dau\"}");
 
         LeaveRequest lr = new LeaveRequest(u.getUsername(), startDate, endDate, reason);
         boolean ok = LeaveDAO.insert(lr);
@@ -79,6 +89,10 @@ public class LeaveController {
         if (idStr == null || status == null)
             return new HttpResponseBuilder().status(400)
                 .json("{\"error\":\"Thieu id hoac status\"}");
+
+        if (!ValidationUtil.isValidLeaveStatus(status))
+            return new HttpResponseBuilder().status(400)
+                .json("{\"error\":\"status phai la APPROVED hoac REJECTED\"}");
 
         int id;
         try { id = Integer.parseInt(idStr.trim()); }

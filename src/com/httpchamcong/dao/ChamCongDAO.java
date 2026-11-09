@@ -78,13 +78,20 @@ public class ChamCongDAO {
             ps.setDate(2, java.sql.Date.valueOf(LocalDate.now()));
             ps.setTime(3, java.sql.Time.valueOf(time));
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) { e.printStackTrace(); return false; }
+        } catch (SQLIntegrityConstraintViolationException duplicate) {
+            // Hai request check-in đồng thời: khóa chính (username, work_date) chặn request sau.
+            return false;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public static boolean checkOut(String username, String time) {
         ChamCong today = findToday(username);
         if (today == null || today.getCheckOut() != null) return false;
-        String sql = "UPDATE chamcong SET check_out = ? WHERE username = ? AND work_date = ?";
+        String sql = "UPDATE chamcong SET check_out = ? " +
+                     "WHERE username = ? AND work_date = ? AND check_out IS NULL";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setTime(1, java.sql.Time.valueOf(time));

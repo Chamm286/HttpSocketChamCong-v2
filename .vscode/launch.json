@@ -3,7 +3,15 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Run Server",
+            "name": "Run Server Dashboard",
+            "request": "launch",
+            "mainClass": "com.httpchamcong.server.ServerApp",
+            "projectName": "HttpSocketChamCong",
+            "vmArgs": "--module-path lib/javafx-sdk-21.0.5/lib --add-modules javafx.controls,javafx.fxml"
+        },
+        {
+            "type": "java",
+            "name": "Run Server Headless",
             "request": "launch",
             "mainClass": "com.httpchamcong.server.HttpSocketServer",
             "projectName": "HttpSocketChamCong"

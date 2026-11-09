@@ -7,6 +7,7 @@ import com.httpchamcong.server.HttpRequestParser;
 import com.httpchamcong.server.HttpResponseBuilder;
 import com.httpchamcong.util.JsonUtil;
 import com.httpchamcong.util.SessionManager;
+import com.httpchamcong.util.ValidationUtil;
 
 import java.util.List;
 
@@ -27,6 +28,10 @@ public class WorkShiftController {
         if (shiftDate == null || shiftType == null)
             return new HttpResponseBuilder().status(400)
                 .json("{\"error\":\"Thieu shiftDate hoac shiftType\"}");
+
+        if (!ValidationUtil.isIsoDate(shiftDate))
+            return new HttpResponseBuilder().status(400)
+                .json("{\"error\":\"shiftDate phai theo dinh dang yyyy-MM-dd\"}");
 
         if (!shiftType.equals("SANG") && !shiftType.equals("CHIEU") && !shiftType.equals("TOI"))
             return new HttpResponseBuilder().status(400)
@@ -87,6 +92,15 @@ public class WorkShiftController {
             return new HttpResponseBuilder().status(400)
                 .json("{\"error\":\"id khong hop le\"}");
         }
+
+        WorkShift shift = WorkShiftDAO.findById(id);
+        if (shift == null)
+            return new HttpResponseBuilder().status(404)
+                .json("{\"error\":\"Khong tim thay ca\"}");
+
+        if (!shift.getUsername().equals(u.getUsername()) && !"ADMIN".equals(u.getRole()))
+            return new HttpResponseBuilder().status(403)
+                .json("{\"error\":\"Chi duoc xoa ca cua minh\"}");
 
         boolean ok = WorkShiftDAO.deleteById(id);
         return ok

@@ -29,6 +29,7 @@ lib/javafx-sdk-21.0.5/
 # Temp
 *.tmp
 *.bak
+sources.txt
 
 # Test files
 TestHttp.java

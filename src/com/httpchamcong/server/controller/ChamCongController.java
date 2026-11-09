@@ -5,8 +5,11 @@ import com.httpchamcong.model.ChamCong;
 import com.httpchamcong.model.User;
 import com.httpchamcong.server.HttpRequestParser;
 import com.httpchamcong.server.HttpResponseBuilder;
+import com.httpchamcong.util.JsonUtil;
 import com.httpchamcong.util.SessionManager;
 
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -14,45 +17,145 @@ import java.util.List;
 
 public class ChamCongController {
 
+    private static final DateTimeFormatter TIME_FMT =
+        DateTimeFormatter.ofPattern("HH:mm:ss");
+
     private User auth(HttpRequestParser req) {
         String token = req.getBearerToken();
         return SessionManager.getUser(token);
     }
 
+    // ============ TODAY STATUS ============
+    /**
+     * GET /api/attendance/today
+     * Trả về trạng thái chấm công hôm nay của user đang đăng nhập.
+     * status: NOT_CHECKED_IN | WORKING | COMPLETED
+     */
+    public HttpResponseBuilder today(HttpRequestParser req) {
+        User u = auth(req);
+        if (u == null)
+            return new HttpResponseBuilder().status(401)
+                .json("{\"error\":\"Chua dang nhap\"}");
+
+        ChamCong c = ChamCongDAO.findToday(u.getUsername());
+        return new HttpResponseBuilder().status(200)
+            .json(attendanceJson(c, null, LocalTime.now()));
+    }
+
     // ============ CHECK-IN ============
+    /**
+     * POST /api/checkin
+     * - Nếu hôm nay chưa có bản ghi: INSERT giờ hiện tại (do server quyết định).
+     * - Nếu đã có bản ghi: 400 Bad Request.
+     */
     public HttpResponseBuilder checkIn(HttpRequestParser req) {
         User u = auth(req);
         if (u == null)
             return new HttpResponseBuilder().status(401)
                 .json("{\"error\":\"Chua dang nhap\"}");
 
-        String time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        boolean ok = ChamCongDAO.checkIn(u.getUsername(), time);
-
-        if (!ok)
+        // Giờ do server ghi nhận, client không gửi giờ lên.
+        String time = LocalTime.now().format(TIME_FMT);
+        if (!ChamCongDAO.checkIn(u.getUsername(), time)) {
             return new HttpResponseBuilder().status(400)
                 .json("{\"error\":\"Hom nay da check-in roi\"}");
+        }
 
-        return new HttpResponseBuilder().status(201)  // ⭐ 201 Created
-            .json("{\"msg\":\"Check-in thanh cong\",\"time\":\"" + time + "\"}");
+        ChamCong saved = ChamCongDAO.findToday(u.getUsername());
+        if (saved == null) {
+            return new HttpResponseBuilder().status(500)
+                .json("{\"error\":\"Khong doc duoc ban ghi vua tao\"}");
+        }
+
+        return new HttpResponseBuilder().status(201) // 201 Created
+            .json(attendanceJson(saved, "Check-in thanh cong", LocalTime.now()));
     }
 
     // ============ CHECK-OUT ============
+    /**
+     * POST /api/checkout
+     * - Phải đã check-in và check_out đang NULL.
+     * - UPDATE giờ ra, sau đó tính tổng thời gian làm từ dữ liệu DB.
+     * - Nếu chưa check-in hoặc đã check-out: 400 Bad Request.
+     */
     public HttpResponseBuilder checkOut(HttpRequestParser req) {
         User u = auth(req);
         if (u == null)
             return new HttpResponseBuilder().status(401)
                 .json("{\"error\":\"Chua dang nhap\"}");
 
-        String time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        boolean ok = ChamCongDAO.checkOut(u.getUsername(), time);
-
-        if (!ok)
+        String time = LocalTime.now().format(TIME_FMT);
+        if (!ChamCongDAO.checkOut(u.getUsername(), time)) {
             return new HttpResponseBuilder().status(400)
                 .json("{\"error\":\"Chua check-in hoac da check-out\"}");
+        }
+
+        ChamCong saved = ChamCongDAO.findToday(u.getUsername());
+        if (saved == null || saved.getCheckOut() == null) {
+            return new HttpResponseBuilder().status(500)
+                .json("{\"error\":\"Khong doc duoc ban ghi sau khi check-out\"}");
+        }
 
         return new HttpResponseBuilder().status(200)
-            .json("{\"msg\":\"Check-out thanh cong\",\"time\":\"" + time + "\"}");
+            .json(attendanceJson(saved, "Check-out thanh cong", LocalTime.now()));
+    }
+
+    /**
+     * Build JSON chấm công từ đúng dữ liệu DB.
+     * Không hardcode giờ vào/ra; workedMinutes được tính từ checkIn/checkOut.
+     */
+    private String attendanceJson(ChamCong c, String message, LocalTime serverTime) {
+        String date = c != null && c.getDate() != null
+            ? c.getDate()
+            : LocalDate.now().toString();
+        String checkIn = c == null || c.getCheckIn() == null ? "" : c.getCheckIn();
+        String checkOut = c == null || c.getCheckOut() == null ? "" : c.getCheckOut();
+
+        String status;
+        if (checkIn.isEmpty()) {
+            status = "NOT_CHECKED_IN";
+        } else if (checkOut.isEmpty()) {
+            status = "WORKING";
+        } else {
+            status = "COMPLETED";
+        }
+
+        long workedMinutes = workedMinutes(c);
+        String now = (serverTime == null ? LocalTime.now() : serverTime).format(TIME_FMT);
+
+        StringBuilder sb = new StringBuilder("{");
+        if (message != null) {
+            sb.append("\"msg\":\"").append(JsonUtil.escape(message)).append("\",");
+        }
+        sb.append("\"time\":\"").append(JsonUtil.escape(now)).append("\",")
+          .append("\"date\":\"").append(JsonUtil.escape(date)).append("\",")
+          .append("\"checkIn\":\"").append(JsonUtil.escape(checkIn)).append("\",")
+          .append("\"checkOut\":\"").append(JsonUtil.escape(checkOut)).append("\",")
+          .append("\"status\":\"").append(status).append("\",")
+          .append("\"workedMinutes\":").append(workedMinutes).append(",")
+          .append("\"serverTime\":\"").append(JsonUtil.escape(now)).append("\"}");
+        return sb.toString();
+    }
+
+    private LocalTime parseTime(String t) {
+        if (t == null || t.isEmpty()) return null;
+        String s = t.length() >= 8 ? t.substring(0, 8) : t;
+        try { return LocalTime.parse(s, TIME_FMT); }
+        catch (Exception e) { return null; }
+    }
+
+    private long workedMinutes(ChamCong c) {
+        if (c == null) return 0;
+        LocalTime start = parseTime(c.getCheckIn());
+        LocalTime end = c.getCheckOut() != null
+            ? parseTime(c.getCheckOut())
+            : LocalTime.now();
+        if (start == null || end == null) return 0;
+
+        long mins = Duration.between(start, end).toMinutes();
+        // Ca đêm: giờ ra nhỏ hơn giờ vào → cộng thêm 24h.
+        if (mins < 0) mins += 24 * 60;
+        return Math.max(0, mins);
     }
 
     // ============ HISTORY + FILTER + PAGINATION ============
@@ -65,7 +168,7 @@ public class ChamCongController {
             return new HttpResponseBuilder().status(401)
                 .json("{\"error\":\"Chua dang nhap\"}");
 
-        // ⭐ PARSE QUERY STRING
+        // PARSE QUERY STRING
         String from = req.getParams().get("from");
         String to   = req.getParams().get("to");
         String userFilter = req.getParams().get("user");
@@ -168,9 +271,9 @@ public class ChamCongController {
                .append("\n");
         }
 
-        String filename = "chamcong_" + java.time.LocalDate.now() + ".csv";
+        String filename = "chamcong_" + LocalDate.now() + ".csv";
 
-        // ⭐ HTTP/1.1: Content-Type + Content-Disposition
+        // HTTP/1.1: Content-Type + Content-Disposition
         return new HttpResponseBuilder()
             .status(200)
             .header("Content-Type", "text/csv; charset=UTF-8")
