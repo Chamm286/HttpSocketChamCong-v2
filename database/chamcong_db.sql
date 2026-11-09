@@ -109,12 +109,12 @@ CREATE TABLE work_notes (
 -- Mật khẩu demo dùng plain text để dễ test đồ án.
 -- ============================================================
 INSERT INTO users (username, password, full_name, role, department, phone, avatar_url) VALUES
-('admin',   'Admin@2025',   'Nguyễn Duy Minh',       'ADMIN', 'Phòng Kỹ thuật',          '0901 234 567', 'https://ui-avatars.com/api/?name=Nguyen+Duy+Minh&background=2563eb&color=fff'),
-('pvkhai',  'Nhanvien@2025', 'Phan Văn Khải',        'USER',  'Phòng Kỹ thuật',          '0912 345 678', 'https://ui-avatars.com/api/?name=Phan+Van+Khai&background=0ea5e9&color=fff'),
-('ttbtram', 'Nhanvien@2025', 'Trần Thị Bích Trâm',   'USER',  'Phòng Kinh doanh',        '0923 456 789', 'https://ui-avatars.com/api/?name=Tran+Thi+Bich+Tram&background=0284c7&color=fff'),
-('lhcuong', 'Nhanvien@2025', 'Lê Hoàng Cường',       'USER',  'Phòng Kỹ thuật',          '0934 567 890', 'https://ui-avatars.com/api/?name=Le+Hoang+Cuong&background=1d4ed8&color=fff'),
-('ptdung',  'Nhanvien@2025', 'Phạm Thị Dung',        'USER',  'Phòng Nhân sự',           '0945 678 901', 'https://ui-avatars.com/api/?name=Pham+Thi+Dung&background=0369a1&color=fff'),
-('vmduc',   'Nhanvien@2025', 'Võ Minh Đức',          'USER',  'Phòng Chăm sóc khách hàng','0956 789 012', 'https://ui-avatars.com/api/?name=Vo+Minh+Duc&background=075985&color=fff');
+('Chamnee',   '12345678',   'Nguyễn Thị Bích Trâm',       'ADMIN', 'Phòng Kỹ thuật',          '0901 234 567', 'https://ui-avatars.com/api/?name=Nguyen+Thi+Bich+Tram&background=0f4c75&color=fff'),
+('pvkhai',  '12345678', 'Phan Văn Khải',        'USER',  'Phòng Kỹ thuật',          '0912 345 678', 'https://ui-avatars.com/api/?name=Phan+Van+Khai&background=0f766e&color=fff'),
+('ttbtram', '12345678', 'Trần Thị Bích Trâm',   'USER',  'Phòng Kinh doanh',        '0923 456 789', 'https://ui-avatars.com/api/?name=Tran+Thi+Bich+Tram&background=115e59&color=fff'),
+('lhcuong', '12345678', 'Lê Hoàng Cường',       'USER',  'Phòng Kỹ thuật',          '0934 567 890', 'https://ui-avatars.com/api/?name=Le+Hoang+Cuong&background=0b3b5c&color=fff'),
+('ptdung',  '12345678', 'Phạm Thị Dung',        'USER',  'Phòng Nhân sự',           '0945 678 901', 'https://ui-avatars.com/api/?name=Pham+Thi+Dung&background=0f766e&color=fff'),
+('vmduc',   '12345678', 'Võ Minh Đức',          'USER',  'Phòng Chăm sóc khách hàng','0956 789 012', 'https://ui-avatars.com/api/?name=Vo+Minh+Duc&background=082f49&color=fff');
 
 -- ============================================================
 -- CHẤM CÔNG 7 NGÀY GẦN NHẤT (tính cả hôm nay)
@@ -124,49 +124,49 @@ INSERT INTO users (username, password, full_name, role, department, phone, avata
 INSERT INTO chamcong
 (username, work_date, check_in, check_out, checkin_lat, checkin_lng, checkin_face_verified, note) VALUES
 -- 6 ngày trước
-('admin',   CURDATE() - INTERVAL 6 DAY, '07:58:00', '17:05:00', 21.02780, 105.83420, 1, ''),
+('Chamnee',   CURDATE() - INTERVAL 6 DAY, '07:58:00', '17:05:00', 21.02780, 105.83420, 1, ''),
 ('pvkhai',  CURDATE() - INTERVAL 6 DAY, '08:02:00', '17:10:00', 21.02810, 105.83450, 1, ''),
 ('ttbtram', CURDATE() - INTERVAL 6 DAY, '08:15:00', '17:00:00', 21.02740, 105.83390, 1, 'Đi muộn do tắc đường'),
 ('lhcuong', CURDATE() - INTERVAL 6 DAY, '07:50:00', '17:02:00', 21.02830, 105.83480, 1, ''),
 ('ptdung',  CURDATE() - INTERVAL 6 DAY, '07:55:00', '17:08:00', 21.02720, 105.83370, 1, ''),
 ('vmduc',   CURDATE() - INTERVAL 6 DAY, '08:05:00', '17:00:00', 21.02800, 105.83440, 1, ''),
 -- 5 ngày trước
-('admin',   CURDATE() - INTERVAL 5 DAY, '07:55:00', '17:00:00', 21.02780, 105.83420, 1, ''),
+('Chamnee',   CURDATE() - INTERVAL 5 DAY, '07:55:00', '17:00:00', 21.02780, 105.83420, 1, ''),
 ('pvkhai',  CURDATE() - INTERVAL 5 DAY, '07:59:00', '17:05:00', 21.02810, 105.83450, 1, ''),
 ('ttbtram', CURDATE() - INTERVAL 5 DAY, '08:20:00', '17:15:00', 21.02740, 105.83390, 1, 'Đi muộn 20 phút'),
 ('lhcuong', CURDATE() - INTERVAL 5 DAY, '07:45:00', '16:58:00', 21.02830, 105.83480, 1, ''),
 ('ptdung',  CURDATE() - INTERVAL 5 DAY, '07:57:00', '17:03:00', 21.02720, 105.83370, 1, ''),
 ('vmduc',   CURDATE() - INTERVAL 5 DAY, '08:01:00', '17:00:00', 21.02800, 105.83440, 1, ''),
 -- 4 ngày trước
-('admin',   CURDATE() - INTERVAL 4 DAY, '07:52:00', '17:06:00', 21.02780, 105.83420, 1, ''),
+('Chamnee',   CURDATE() - INTERVAL 4 DAY, '07:52:00', '17:06:00', 21.02780, 105.83420, 1, ''),
 ('pvkhai',  CURDATE() - INTERVAL 4 DAY, '08:03:00', '17:00:00', 21.02810, 105.83450, 1, ''),
 ('ttbtram', CURDATE() - INTERVAL 4 DAY, '07:58:00', '17:00:00', 21.02740, 105.83390, 1, ''),
 ('lhcuong', CURDATE() - INTERVAL 4 DAY, '08:12:00', '17:10:00', 21.02830, 105.83480, 1, 'Đi muộn do xe hỏng'),
 ('ptdung',  CURDATE() - INTERVAL 4 DAY, '07:49:00', '17:02:00', 21.02720, 105.83370, 1, ''),
 ('vmduc',   CURDATE() - INTERVAL 4 DAY, '07:55:00', '17:05:00', 21.02800, 105.83440, 1, ''),
 -- 3 ngày trước
-('admin',   CURDATE() - INTERVAL 3 DAY, '07:57:00', '17:00:00', 21.02780, 105.83420, 1, ''),
+('Chamnee',   CURDATE() - INTERVAL 3 DAY, '07:57:00', '17:00:00', 21.02780, 105.83420, 1, ''),
 ('pvkhai',  CURDATE() - INTERVAL 3 DAY, '07:56:00', '17:06:00', 21.02810, 105.83450, 1, ''),
 ('ttbtram', CURDATE() - INTERVAL 3 DAY, '08:05:00', '17:00:00', 21.02740, 105.83390, 1, ''),
 ('lhcuong', CURDATE() - INTERVAL 3 DAY, '07:55:00', '17:00:00', 21.02830, 105.83480, 1, ''),
 ('ptdung',  CURDATE() - INTERVAL 3 DAY, '08:18:00', '17:12:00', 21.02720, 105.83370, 1, 'Đi muộn 18 phút'),
 ('vmduc',   CURDATE() - INTERVAL 3 DAY, '07:50:00', '17:00:00', 21.02800, 105.83440, 1, ''),
 -- 2 ngày trước
-('admin',   CURDATE() - INTERVAL 2 DAY, '07:59:00', '17:00:00', 21.02780, 105.83420, 1, ''),
+('Chamnee',   CURDATE() - INTERVAL 2 DAY, '07:59:00', '17:00:00', 21.02780, 105.83420, 1, ''),
 ('pvkhai',  CURDATE() - INTERVAL 2 DAY, '08:07:00', '17:09:00', 21.02810, 105.83450, 1, 'Đi muộn 7 phút'),
 ('ttbtram', CURDATE() - INTERVAL 2 DAY, '07:57:00', '17:00:00', 21.02740, 105.83390, 1, ''),
 ('lhcuong', CURDATE() - INTERVAL 2 DAY, '07:48:00', '17:03:00', 21.02830, 105.83480, 1, ''),
 ('ptdung',  CURDATE() - INTERVAL 2 DAY, '07:52:00', '17:00:00', 21.02720, 105.83370, 1, ''),
 ('vmduc',   CURDATE() - INTERVAL 2 DAY, '08:04:00', '17:00:00', 21.02800, 105.83440, 1, ''),
 -- hôm qua
-('admin',   CURDATE() - INTERVAL 1 DAY, '07:55:00', '17:05:00', 21.02780, 105.83420, 1, ''),
+('Chamnee',   CURDATE() - INTERVAL 1 DAY, '07:55:00', '17:05:00', 21.02780, 105.83420, 1, ''),
 ('pvkhai',  CURDATE() - INTERVAL 1 DAY, '07:58:00', '17:02:00', 21.02810, 105.83450, 1, ''),
 ('ttbtram', CURDATE() - INTERVAL 1 DAY, '08:10:00', '17:00:00', 21.02740, 105.83390, 1, 'Đi muộn 10 phút'),
 ('lhcuong', CURDATE() - INTERVAL 1 DAY, '07:45:00', '16:55:00', 21.02830, 105.83480, 1, ''),
 ('ptdung',  CURDATE() - INTERVAL 1 DAY, '07:50:00', '17:07:00', 21.02720, 105.83370, 1, ''),
 ('vmduc',   CURDATE() - INTERVAL 1 DAY, '08:00:00', '17:00:00', 21.02800, 105.83440, 1, ''),
 -- hôm nay
-('admin',   CURDATE(), '07:55:00', NULL, 21.02780, 105.83420, 1, ''),
+('Chamnee',   CURDATE(), '07:55:00', NULL, 21.02780, 105.83420, 1, ''),
 ('ttbtram', CURDATE(), '08:15:00', NULL, 21.02740, 105.83390, 1, 'Đi muộn 15 phút - kẹt xe'),
 ('lhcuong', CURDATE(), '07:59:00', '17:10:00', 21.02830, 105.83480, 1, ''),
 ('vmduc',   CURDATE(), '07:45:00', '17:05:00', 21.02800, 105.83440, 1, '');

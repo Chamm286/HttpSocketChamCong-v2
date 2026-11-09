@@ -39,7 +39,7 @@
 - ✅ **MySQL** — lưu trữ dữ liệu thật
 - ✅ **JDBC** — kết nối database
 
-### ⚠️ Web client nhưng KHÔNG dùng web server/framework
+### 🌐 Web Client và Web Server trong đồ án
 
 Hệ thống có **2 client** dùng chung một server:
 
@@ -55,6 +55,10 @@ Không có Tomcat / Jetty / Spring Boot / Nginx / Apache ở giữa.
 - ✅ Server tự parse HTTP/1.1 và tự trả file tĩnh + JSON API
 - ✅ Trình duyệt chỉ thay thế phần giao diện — **giao thức vẫn là HTTP/1.1 trên Socket TCP/IP**
 - ✅ JavaFX client vẫn được giữ để chứng minh phần tự build HTTP request thủ công
+
+**Web Client** là phần giao diện chạy trong trình duyệt: HTML/CSS/JavaScript gọi API bằng `fetch()`, nhận JSON và cập nhật giao diện. Trình duyệt không kết nối trực tiếp MySQL.
+
+**Web Server** trong đồ án chính là Java Socket Server ở cổng `2020`: tự `ServerSocket.accept()`, tự parse HTTP/1.1, tự định tuyến `/api/...`, tự build response JSON và trả file tĩnh trong `web/`. Không có Tomcat, Spring Boot hay Nginx ở giữa.
 
 ---
 
@@ -322,6 +326,10 @@ java -Dchamcong.db.password=matkhau -cp "bin;lib/mysql-connector-j-26.7.0.jar" ^
 
 ## 🚀 Chạy chương trình
 
+### Chạy nhanh toàn bộ hệ thống
+
+Chạy `run.bat` tại thư mục gốc. Script sẽ tự compile, mở **Server Dashboard**, mở **JavaFX Desktop Client** và mở **Web Client** trên trình duyệt tại `http://localhost:2020/`.
+
 ### Bước 1: Compile
 
 ```bat
@@ -376,7 +384,7 @@ http://localhost:2020/
 > ```
 > hoặc đặt biến môi trường `CHAMCONG_WEB_DIR`.
 
-### Bước 4: Chạy JavaFX client (tùy chọn — legacy)
+### Bước 4: Chạy JavaFX Desktop Client
 
 **Terminal 2 (mở mới):**
 
@@ -458,7 +466,7 @@ Content-Type: application/json; charset=UTF-8
 Content-Length: 48
 Connection: close
 
-{"username":"admin","password":"Admin@2025"}
+{"username":"Chamnee","password":"12345678"}
 ```
 
 ### Ví dụ HTTP Response
@@ -471,7 +479,7 @@ Connection: close
 Content-Type: application/json; charset=UTF-8
 Content-Length: 145
 
-{"token":"a1b2c3d4-...","user":{"username":"admin","fullName":"Nguyễn Duy Minh","role":"ADMIN","department":"Phòng Kỹ thuật","phone":"0901 234 567"}}
+{"token":"a1b2c3d4-...","user":{"username":"Chamnee","fullName":"Nguyễn Thị Bích Trâm","role":"ADMIN","department":"Phòng Kỹ thuật","phone":"0901 234 567"}}
 ```
 
 ---
@@ -497,12 +505,12 @@ không TLS, mật khẩu chưa băm, session trong bộ nhớ chưa hết hạn,
 
 | Username | Password | Vai trò | Họ tên | Phòng ban |
 |----------|----------|---------|--------|-----------|
-| **admin** | `Admin@2025` | **ADMIN** | Nguyễn Duy Minh | Phòng Kỹ thuật |
-| pvkhai | `Nhanvien@2025` | USER | Phan Văn Khải | Phòng Kỹ thuật |
-| ttbtram | `Nhanvien@2025` | USER | Trần Thị Bích Trâm | Phòng Kinh doanh |
-| lhcuong | `Nhanvien@2025` | USER | Lê Hoàng Cường | Phòng Kỹ thuật |
-| ptdung | `Nhanvien@2025` | USER | Phạm Thị Dung | Phòng Nhân sự |
-| vmduc | `Nhanvien@2025` | USER | Võ Minh Đức | Phòng Chăm sóc khách hàng |
+| **Chamnee** | `12345678` | **ADMIN** | Nguyễn Thị Bích Trâm | Phòng Kỹ thuật |
+| pvkhai | `12345678` | USER | Phan Văn Khải | Phòng Kỹ thuật |
+| ttbtram | `12345678` | USER | Trần Thị Bích Trâm | Phòng Kinh doanh |
+| lhcuong | `12345678` | USER | Lê Hoàng Cường | Phòng Kỹ thuật |
+| ptdung | `12345678` | USER | Phạm Thị Dung | Phòng Nhân sự |
+| vmduc | `12345678` | USER | Võ Minh Đức | Phòng Chăm sóc khách hàng |
 
 > File `database/chamcong_db.sql` dùng `DROP DATABASE` để tạo lại dữ liệu sạch. Chạy lại file này sẽ xóa dữ liệu hiện có trong `chamcong_db`.
 > Hôm nay, `pvkhai` và `ptdung` chưa chấm công để tiện test luồng Check-in + FaceID + GPS trên web.
@@ -553,27 +561,23 @@ không TLS, mật khẩu chưa băm, session trong bộ nhớ chưa hết hạn,
 
 ## 📸 Screenshots
 
-### Web — Đăng nhập
+### Web Client — Đăng nhập
 
-![Web login](docs/screenshots/web-login.png)
+![Web login enterprise](docs/screenshots/web-login-enterprise.png)
 
-### Web — Trang chủ (light)
+### Web Client — Dashboard quản trị
 
-![Web dashboard](docs/screenshots/web-dashboard.png)
+![Web dashboard enterprise](docs/screenshots/web-dashboard-enterprise.png)
 
-### Web — Chấm công
+### Server Dashboard
 
-![Web attendance](docs/screenshots/web-attendance.png)
+![Server dashboard enterprise](docs/screenshots/server-dashboard-enterprise.png)
 
-### Web — Quản lý nhân viên
+### JavaFX Desktop Client
 
-![Web admin users](docs/screenshots/web-admin-users.png)
+![Desktop client enterprise](docs/screenshots/desktop-client-enterprise.png)
 
-### Web — Dark mode
-
-![Web dark](docs/screenshots/web-dashboard-dark.png)
-
-> JavaFX client legacy vẫn chạy được nhưng không còn là giao diện chính. Ảnh chụp JavaFX cũ không được đưa vào tài liệu này.
+> Bộ giao diện dùng palette doanh nghiệp **navy + teal + gold**, không dùng màu tím. Network Console đã được loại khỏi Web Client; bằng chứng HTTP/1.1 raw được hiển thị trên Server Dashboard qua Live Log / Live JSON / Requests.
 
 ---
 

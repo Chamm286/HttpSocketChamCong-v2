@@ -17,222 +17,6 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
 const icon = (name, cls = '') =>
   `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 
-/* ============================================================
-   NETWORK CONSOLE — hiển thị HTTP/1.1 raw request/response
-   ============================================================ */
-const netState = {
-  entries: [],
-  seq: 0,
-  max: 60,
-};
-
-function netNow() {
-  const d = new Date();
-  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
-}
-
-function netIsOpen() {
-  const el = $('#net-console');
-  return !!el && !el.hidden;
-}
-
-function netHeaderName(name) {
-  return String(name || '').split('-')
-    .map(p => p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p)
-    .join('-');
-}
-
-function netStatusText(code) {
-  return ({
-    200: 'OK', 201: 'Created', 204: 'No Content',
-    400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden',
-    404: 'Not Found', 405: 'Method Not Allowed', 409: 'Conflict',
-    429: 'Too Many Requests', 500: 'Internal Server Error',
-    501: 'Not Implemented', 505: 'HTTP Version Not Supported',
-  })[code] || '';
-}
-
-/** Che mật khẩu/token khỏi log trình duyệt. */
-function netSafeBody(path, bodyString) {
-  if (bodyString === undefined || bodyString === null) return bodyString;
-  const sensitive = path === '/api/login'
-    || path === '/api/register'
-    || path === '/api/change-password'
-    || path.startsWith('/api/admin/users');
-  if (!sensitive) return bodyString;
-  try {
-    const obj = JSON.parse(bodyString);
-    ['password', 'oldPassword', 'newPassword', 'confirmPassword'].forEach(k => {
-      if (k in obj) obj[k] = '<redacted>';
-    });
-    return JSON.stringify(obj);
-  } catch {
-    return '<redacted>';
-  }
-}
-
-/** Không đưa mật khẩu/token của các API nhạy cảm vào Network Console. */
-function netShouldTrace(path) {
-  return path !== '/api/login'
-    && path !== '/api/register'
-    && path !== '/api/change-password'
-    && !path.startsWith('/api/admin/users');
-}
-
-/** Tái dựng request thô khi response không kèm X-Request-Trace. */
-function netBuildRequest(method, path, headers, bodyString) {
-  const url = new URL(path, location.href);
-  const h = {};
-  Object.entries(headers || {}).forEach(([k, v]) => {
-    if (k.toLowerCase() === 'authorization') h.Authorization = 'Bearer <redacted>';
-    else h[netHeaderName(k)] = v;
-  });
-  h.Host = url.host;
-  if (bodyString !== undefined && bodyString !== null) {
-    h['Content-Type'] = h['Content-Type'] || 'application/json; charset=UTF-8';
-    h['Content-Length'] = String(new TextEncoder().encode(bodyString).length);
-  }
-  h.Connection = 'keep-alive';
-  h.Accept = h.Accept || '*/*';
-  h['User-Agent'] = h['User-Agent'] || navigator.userAgent;
-
-  const lines = [`${method} ${url.pathname}${url.search} HTTP/1.1`];
-  Object.entries(h).forEach(([k, v]) => lines.push(`${k}: ${v}`));
-  lines.push('');
-  if (bodyString !== undefined && bodyString !== null && bodyString !== '') {
-    lines.push(bodyString);
-  }
-  return lines.join('\r\n');
-}
-
-function netBuildResponse(res, text) {
-  const statusText = res.statusText || netStatusText(res.status);
-  const lines = [`HTTP/1.1 ${res.status} ${statusText}`.trim()];
-  const hs = [];
-  res.headers.forEach((value, key) => {
-    // Header trace chỉ dùng nội bộ cho console, không lặp lại trong raw response.
-    if (key.toLowerCase() === 'x-request-trace') return;
-    hs.push(`${netHeaderName(key)}: ${value}`);
-  });
-  hs.sort((a, b) => a.localeCompare(b));
-  lines.push(...hs);
-  lines.push('');
-  if (text) lines.push(text);
-  return lines.join('\r\n');
-}
-
-function netDecodeTrace(base64) {
-  if (!base64) return '';
-  try {
-    const bin = atob(base64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return new TextDecoder('utf-8').decode(bytes);
-  } catch {
-    return '';
-  }
-}
-
-function netEntryHtml(e, index) {
-  const ok = e.status >= 200 && e.status < 300;
-  const open = index === 0 || e.status >= 400;
-  const methodCls = e.method === 'POST' ? 'post' : e.method === 'DELETE' ? 'delete' : '';
-  return `
-    <details class="net-entry" ${open ? 'open' : ''}>
-      <summary class="net-entry-head">
-        <span class="net-method ${methodCls}">${esc(e.method)}</span>
-        <span class="net-path" title="${esc(e.path)}">${esc(e.path)}</span>
-        <span class="net-status ${ok ? 'ok' : 'err'}">${e.status || 'ERR'} ${esc(e.statusText || '')}</span>
-        <span class="net-time">${esc(e.time)} · ${e.duration} ms</span>
-      </summary>
-      <div class="net-entry-body">
-        <div class="net-section">
-          <div class="net-label">→ Request · raw HTTP/1.1</div>
-          <pre class="net-pre req">${esc(e.requestRaw)}</pre>
-        </div>
-        <div class="net-section">
-          <div class="net-label response">← Response · raw HTTP/1.1</div>
-          <pre class="net-pre res">${esc(e.responseRaw)}</pre>
-        </div>
-      </div>
-    </details>`;
-}
-
-function netRender() {
-  const list = $('#net-list');
-  if (!list) return;
-
-  const count = $('#net-count');
-  if (count) count.textContent = String(netState.entries.length);
-
-  if (!netState.entries.length) {
-    list.innerHTML = '<div class="net-empty">Chưa có request.<br>Bấm CHECK-IN / CHECK-OUT để xem raw HTTP/1.1.</div>';
-    return;
-  }
-  list.innerHTML = netState.entries.map(netEntryHtml).join('');
-}
-
-function netRecord({ method, path, requestRaw, responseRaw, status, statusText, duration }) {
-  netState.entries.unshift({
-    id: ++netState.seq,
-    method: String(method || '?').toUpperCase(),
-    path,
-    requestRaw,
-    responseRaw,
-    status: Number(status) || 0,
-    statusText: statusText || netStatusText(status),
-    duration: Math.max(0, Math.round(duration || 0)),
-    time: netNow(),
-  });
-  if (netState.entries.length > netState.max) {
-    netState.entries.length = netState.max;
-  }
-
-  const dot = $('#net-console-dot');
-  if (dot) dot.hidden = netIsOpen();
-  netRender();
-}
-
-function netOpen() {
-  const el = $('#net-console');
-  if (!el) return;
-  el.hidden = false;
-  el.setAttribute('aria-hidden', 'false');
-  const dot = $('#net-console-dot');
-  if (dot) dot.hidden = true;
-  netRender();
-  const list = $('#net-list');
-  if (list) list.scrollTop = 0;
-}
-
-function netClose() {
-  const el = $('#net-console');
-  if (!el) return;
-  el.hidden = true;
-  el.setAttribute('aria-hidden', 'true');
-}
-
-function netToggle() {
-  if (netIsOpen()) netClose();
-  else netOpen();
-}
-
-function netClear() {
-  netState.entries = [];
-  const dot = $('#net-console-dot');
-  if (dot) dot.hidden = true;
-  netRender();
-}
-
-/* Cho phép debug/test từ Console DevTools. */
-window.NetConsole = {
-  get entries() { return netState.entries; },
-  open: netOpen,
-  close: netClose,
-  clear: netClear,
-  render: netRender,
-};
-
 /* ---------------- Session state ---------------- */
 const state = {
   token: sessionStorage.getItem('cc.token') || '',
@@ -276,33 +60,16 @@ async function api(path, { method = 'GET', body } = {}) {
   if (state.token) headers.Authorization = `Bearer ${state.token}`;
   if (body !== undefined) headers['Content-Type'] = 'application/json; charset=UTF-8';
 
-  const bodyText = body !== undefined ? JSON.stringify(body) : undefined;
-  const traceBody = netSafeBody(path, bodyText);
-  const shouldTrace = netShouldTrace(path);
-  const started = performance.now();
-
   let res;
   try {
     res = await fetch(path, {
       method: httpMethod,
       headers,
-      body: bodyText,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
       cache: 'no-store',
     });
   } catch (err) {
-    if (shouldTrace) {
-      netRecord({
-        method: httpMethod,
-        path,
-        requestRaw: netBuildRequest(httpMethod, path, headers, traceBody),
-        responseRaw: `NETWORK ERROR\r\n\r\n${err.message || err}`,
-        status: 0,
-        statusText: 'Network Error',
-        duration: performance.now() - started,
-      });
-      if (path === '/api/checkin' || path === '/api/checkout') netOpen();
-    }
-    throw err;
+    throw new ApiError('Không thể kết nối tới máy chủ. Kiểm tra server đang chạy.', 0, null);
   }
 
   const text = await res.text();
@@ -310,26 +77,6 @@ async function api(path, { method = 'GET', body } = {}) {
   if (text) {
     try { data = JSON.parse(text); }
     catch { data = { error: text }; }
-  }
-
-  if (shouldTrace) {
-    // Server gắn X-Request-Trace cho check-in/check-out: đây là request THÔ
-    // do server parse được, gồm đúng header/body mà trình duyệt đã gửi.
-    const trace = res.headers.get('x-request-trace');
-    const requestRaw = trace
-      ? netDecodeTrace(trace)
-      : netBuildRequest(httpMethod, path, headers, traceBody);
-
-    netRecord({
-      method: httpMethod,
-      path,
-      requestRaw,
-      responseRaw: netBuildResponse(res, text),
-      status: res.status,
-      statusText: res.statusText,
-      duration: performance.now() - started,
-    });
-    if (path === '/api/checkin' || path === '/api/checkout') netOpen();
   }
 
   if (res.status === 401 && state.token && path !== '/api/login') {
@@ -800,7 +547,7 @@ function isLate(row) {
 
 function roleBadge(role) {
   return role === 'ADMIN'
-    ? '<span class="badge violet">Quản trị</span>'
+    ? '<span class="badge teal">Quản trị</span>'
     : '<span class="badge info">Nhân viên</span>';
 }
 
@@ -815,7 +562,7 @@ function leaveTypeLabel(type) {
 }
 
 function leaveTypeBadge(type) {
-  const cls = type === 'DI_MUON' ? 'warning' : type === 'CONG_TAC' ? 'info' : 'violet';
+  const cls = type === 'DI_MUON' ? 'warning' : type === 'CONG_TAC' ? 'info' : 'teal';
   return `<span class="badge ${cls}">${esc(leaveTypeLabel(type))}</span>`;
 }
 
@@ -969,7 +716,7 @@ async function renderDashboard(root) {
         <div class="stat-value mono">${esc(att.checkOut || '—')}</div>
         <div class="stat-foot">${att.checkOut ? 'Đã kết thúc ngày' : 'Chưa check-out'}</div>
       </div>
-      <div class="stat-card violet">
+      <div class="stat-card teal">
         <div class="stat-top"><span class="stat-ic">${icon('timer')}</span><span class="stat-label">Thời gian làm</span></div>
         <div class="stat-value">${esc(fmtDuration(att.workedMinutes))}</div>
         <div class="stat-foot">Trong ngày hôm nay</div>
@@ -1087,7 +834,7 @@ async function renderAdminDashboard(root) {
         <div class="stat-value">${stats.absent}</div>
         <div class="stat-foot">${stats.completed} đã hoàn thành hôm nay</div>
       </div>
-      <div class="stat-card violet">
+      <div class="stat-card teal">
         <div class="stat-top"><span class="stat-ic">${icon('alert-triangle')}</span><span class="stat-label">Đi muộn</span></div>
         <div class="stat-value">${stats.late}</div>
         <div class="stat-foot">${stats.pendingLeaves} đơn đang chờ duyệt</div>
@@ -1319,7 +1066,7 @@ async function renderAttendance(root) {
         <span class="stat-ic">${icon('timer')}</span>
         <div><div class="label">Thời gian làm</div><div class="value" id="att-worked">${esc(fmtDuration(att.workedMinutes))}</div></div>
       </div>
-      <div class="info-card violet">
+      <div class="info-card teal">
         <span class="stat-ic">${icon('check-circle')}</span>
         <div><div class="label">Trạng thái</div><div class="value">${esc(statusLabel)}</div></div>
       </div>
@@ -1630,7 +1377,7 @@ async function renderStats(root) {
         <div class="stat-value">${lateRows.length}</div>
         <div class="stat-foot">Sau 08:00:00</div>
       </div>
-      <div class="stat-card violet">
+      <div class="stat-card teal">
         <div class="stat-top"><span class="stat-ic">${icon('timer')}</span><span class="stat-label">Tổng thời gian</span></div>
         <div class="stat-value">${esc(fmtHours(totalMins))}</div>
         <div class="stat-foot">Trung bình ${esc(fmtDuration(avgMins))}/ngày</div>
@@ -1901,7 +1648,7 @@ async function renderShifts(root) {
             ${rows.map(r => `
               <tr>
                 <td class="strong nowrap">${esc(fmtDate(r.shiftDate))}</td>
-                <td><span class="badge ${r.shiftType === 'SANG' ? 'info' : r.shiftType === 'CHIEU' ? 'violet' : 'neutral'}">${esc(shiftLabel(r.shiftType))}</span></td>
+                <td><span class="badge ${r.shiftType === 'SANG' ? 'info' : r.shiftType === 'CHIEU' ? 'teal' : 'neutral'}">${esc(shiftLabel(r.shiftType))}</span></td>
                 <td class="nowrap">${esc(shiftTime(r.shiftType))}</td>
                 <td>${esc(r.note || '—')}</td>
                 <td>${r.username === state.user.username ? '<span class="badge success">Bạn</span>' : esc(r.fullName || r.username)}</td>
@@ -2358,13 +2105,6 @@ function bindGlobalEvents() {
     applyTheme(current === 'dark' ? 'light' : 'dark');
   });
 
-  // Network Console
-  $('#net-console-btn')?.addEventListener('click', netToggle);
-  $('#net-close')?.addEventListener('click', netClose);
-  $('#net-clear')?.addEventListener('click', netClear);
-  window.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && netIsOpen()) netClose();
-  });
 
   // Mobile sidebar
   $('#menu-btn')?.addEventListener('click', openSidebar);

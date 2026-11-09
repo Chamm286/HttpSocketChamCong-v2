@@ -84,23 +84,23 @@ public class ServerApp extends Application {
     // ⭐ Theme toggle
     private boolean isDarkMode = false;
 
-    // ===== PALETTE - PROFESSIONAL BLUE (khong dung tim) =====
-    private static final String C_BG       = "#f3f7fc";
+    // ===== PALETTE - ENTERPRISE NAVY / TEAL / GOLD =====
+    private static final String C_BG       = "#f4f7f9";
     private static final String C_CARD     = "#ffffff";
     private static final String C_CARD2    = "#f8fafc";
-    private static final String C_BORDER   = "#dbe4ef";
-    private static final String C_TEXT     = "#0f172a";
-    private static final String C_TEXT2    = "#1e3a5f";
+    private static final String C_BORDER   = "#dce6ee";
+    private static final String C_TEXT     = "#0b1f33";
+    private static final String C_TEXT2    = "#24445f";
     private static final String C_MUTED    = "#64748b";
-    private static final String C_ACCENT   = "#2563eb";
-    private static final String C_ACCENT2  = "#1d4ed8";
+    private static final String C_ACCENT   = "#0f4c75";
+    private static final String C_ACCENT2  = "#0b3b5c";
     private static final String C_GREEN    = "#16a34a";
-    private static final String C_ORANGE   = "#ea580c";
-    private static final String C_BLUE     = "#0284c7";
-    private static final String C_SKY      = "#0ea5e9";
+    private static final String C_ORANGE   = "#b45309";
+    private static final String C_BLUE     = "#0f766e";
+    private static final String C_SKY      = "#0f766e";
     private static final String C_RED      = "#dc2626";
-    private static final String C_TEAL     = "#0e7490";
-    private static final String C_AMBER    = "#d97706";
+    private static final String C_TEAL     = "#0b3b5c";
+    private static final String C_AMBER    = "#b78a2e";
 
     @Override
     public void start(Stage stage) {
@@ -118,17 +118,17 @@ public class ServerApp extends Application {
         StackPane logoCircle = new StackPane();
         logoCircle.setPrefSize(46, 46);
         logoCircle.setMaxSize(46, 46);
-        logoCircle.setStyle("-fx-background-color: linear-gradient(to bottom right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 23; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.5), 10, 0, 0, 3);");
+        logoCircle.setStyle("-fx-background-color: linear-gradient(to bottom right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 23; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.45), 10, 0, 0, 3);");
         FontIcon logoIcon = new FontIcon(FontAwesomeSolid.SERVER);
         logoIcon.setIconSize(22);
         logoIcon.setIconColor(Color.WHITE);
         logoCircle.getChildren().add(logoIcon);
 
         VBox titleBox = new VBox(2);
-        Label title = new Label("CHAMCONG SERVER CONTROL");
+        Label title = new Label("ATTENDANCE SERVER CONTROL");
         title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         title.setTextFill(Color.web(C_TEXT));
-        Label sub = new Label("HTTP/1.1 over Socket TCP  •  Port " + HttpSocketServer.PORT);
+        Label sub = new Label("Enterprise Attendance  |  HTTP/1.1 over TCP Socket  |  Port " + HttpSocketServer.PORT);
         sub.setFont(Font.font("Consolas", 11));
         sub.setTextFill(Color.web(C_MUTED));
         titleBox.getChildren().addAll(title, sub);
@@ -146,7 +146,7 @@ public class ServerApp extends Application {
         openWebBtn.setGraphic(globeIcon);
         openWebBtn.setPrefHeight(38);
         openWebBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-        openWebBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 16 0 16; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.35), 10, 0, 0, 3);");
+        openWebBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 16 0 16; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.30), 10, 0, 0, 3);");
         openWebBtn.setOnAction(e -> getHostServices().showDocument("http://localhost:" + HttpSocketServer.PORT + "/"));
 
         Button openAdminBtn = new Button("  ADMIN");
@@ -156,7 +156,7 @@ public class ServerApp extends Application {
         openAdminBtn.setGraphic(shieldIcon);
         openAdminBtn.setPrefHeight(38);
         openAdminBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-        openAdminBtn.setStyle("-fx-background-color: #eff6ff; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 16 0 16; -fx-border-color: #bfdbfe; -fx-border-radius: 10; -fx-border-width: 1;");
+        openAdminBtn.setStyle("-fx-background-color: #edf5f9; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 16 0 16; -fx-border-color: #b9d5e2; -fx-border-radius: 10; -fx-border-width: 1;");
         openAdminBtn.setOnAction(e -> getHostServices().showDocument("http://localhost:" + HttpSocketServer.PORT + "/#/admin-users"));
 
         // ⭐ Nút Dark/Light toggle
@@ -164,13 +164,13 @@ public class ServerApp extends Application {
         themeToggleBtn.setPrefSize(42, 42);
         themeToggleBtn.setFont(Font.font("Segoe UI", 16));
         themeToggleBtn.setStyle("-fx-background-color: " + C_CARD2 + "; -fx-background-radius: 21; -fx-cursor: hand; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 21; -fx-border-width: 1;");
-        themeToggleBtn.setOnMouseEntered(e -> themeToggleBtn.setStyle("-fx-background-color: #eff6ff; -fx-background-radius: 21; -fx-cursor: hand; -fx-border-color: " + C_ACCENT + "; -fx-border-radius: 21; -fx-border-width: 1;"));
+        themeToggleBtn.setOnMouseEntered(e -> themeToggleBtn.setStyle("-fx-background-color: #edf5f9; -fx-background-radius: 21; -fx-cursor: hand; -fx-border-color: " + C_ACCENT + "; -fx-border-radius: 21; -fx-border-width: 1;"));
         themeToggleBtn.setOnMouseExited(e -> themeToggleBtn.setStyle("-fx-background-color: " + C_CARD2 + "; -fx-background-radius: 21; -fx-cursor: hand; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 21; -fx-border-width: 1;"));
 
         serverIpLabel = new Label();
         serverIpLabel.setFont(Font.font("Consolas", FontWeight.BOLD, 12));
         serverIpLabel.setTextFill(Color.web(C_ACCENT));
-        serverIpLabel.setStyle("-fx-background-color: #eff6ff; -fx-background-radius: 20; -fx-padding: 8 16 8 16; -fx-border-color: #bfdbfe; -fx-border-radius: 20; -fx-border-width: 1;");
+        serverIpLabel.setStyle("-fx-background-color: #edf5f9; -fx-background-radius: 20; -fx-padding: 8 16 8 16; -fx-border-color: #b9d5e2; -fx-border-radius: 20; -fx-border-width: 1;");
 
         statusBadge = new Label("  STOPPED");
         FontIcon stopIcon = new FontIcon(FontAwesomeSolid.STOP_CIRCLE);
@@ -412,8 +412,8 @@ public class ServerApp extends Application {
             ".table-view .table-cell { -fx-text-fill: " + C_TEXT + "; -fx-border-color: transparent " + C_BORDER + " transparent transparent; -fx-padding: 9 12 9 12; -fx-alignment: center-left; }" +
             ".table-view .table-row-cell { -fx-background-color: " + C_CARD + "; -fx-cell-size: 44; -fx-border-color: transparent transparent " + C_BORDER + " transparent; -fx-border-width: 0 0 1 0; }" +
             ".table-view .table-row-cell:odd { -fx-background-color: " + C_CARD2 + "; }" +
-            ".table-view .table-row-cell:hover { -fx-background-color: #eff6ff; }" +
-            ".table-view .table-row-cell:selected { -fx-background-color: #dbeafe; }" +
+            ".table-view .table-row-cell:hover { -fx-background-color: #edf5f9; }" +
+            ".table-view .table-row-cell:selected { -fx-background-color: #dceaf1; }" +
             ".scroll-pane { -fx-background-color: transparent; }" +
             ".scroll-pane > .viewport { -fx-background-color: transparent; }" +
             ".scroll-bar:vertical, .scroll-bar:horizontal { -fx-background-color: transparent; }" +
@@ -421,7 +421,7 @@ public class ServerApp extends Application {
             ".scroll-bar .thumb:hover { -fx-background-color: " + C_MUTED + "; }" +
             ".text-field { -fx-text-fill: " + C_TEXT + "; -fx-prompt-text-fill: " + C_MUTED + "; }" +
             ".combo-box .list-cell { -fx-text-fill: " + C_TEXT + "; -fx-background-color: " + C_CARD + "; }" +
-            ".combo-box-popup .list-view .list-cell:filled:hover { -fx-background-color: #eff6ff; -fx-text-fill: " + C_ACCENT + "; }" +
+            ".combo-box-popup .list-view .list-cell:filled:hover { -fx-background-color: #edf5f9; -fx-text-fill: " + C_ACCENT + "; }" +
             ".combo-box-popup .list-view .list-cell:filled:selected { -fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; }" +
             ".chart { -fx-background-color: transparent; }" +
             ".chart-plot-background { -fx-background-color: " + C_CARD + "; }" +
@@ -681,7 +681,7 @@ public class ServerApp extends Application {
         HBox.setHgrow(sp, Priority.ALWAYS);
 
         Label countLbl = new Label("0 requests");
-        countLbl.setStyle("-fx-text-fill: " + C_ACCENT + "; -fx-font-weight: bold; -fx-font-size: 12; -fx-background-color: #eff6ff; -fx-background-radius: 16; -fx-padding: 6 14 6 14; -fx-border-color: #bfdbfe; -fx-border-radius: 16; -fx-border-width: 1;");
+        countLbl.setStyle("-fx-text-fill: " + C_ACCENT + "; -fx-font-weight: bold; -fx-font-size: 12; -fx-background-color: #edf5f9; -fx-background-radius: 16; -fx-padding: 6 14 6 14; -fx-border-color: #b9d5e2; -fx-border-radius: 16; -fx-border-width: 1;");
 
         Button clearBtn = new Button("  Clear view");
         FontIcon clearIcn = new FontIcon(FontAwesomeSolid.TRASH_ALT);
@@ -756,7 +756,7 @@ public class ServerApp extends Application {
                     String color = C_MUTED;
                     String bg = "#f1f5f9";
                     if (item.startsWith("2")) { color = C_GREEN; bg = "#d1fae5"; }
-                    else if (item.startsWith("3")) { color = C_BLUE; bg = "#dbeafe"; }
+                    else if (item.startsWith("3")) { color = C_BLUE; bg = "#dceaf1"; }
                     else if (item.startsWith("4")) { color = C_ORANGE; bg = "#fed7aa"; }
                     else if (item.startsWith("5")) { color = C_RED; bg = "#fecaca"; }
                     setStyle("-fx-text-fill: " + color + "; -fx-font-weight: bold; -fx-background-color: " + bg + "; -fx-background-radius: 6; -fx-padding: 2 8 2 8;");
@@ -832,7 +832,7 @@ public class ServerApp extends Application {
 
         logArea = new TextArea();
         logArea.setEditable(false);
-        logArea.setStyle("-fx-font-family: 'Consolas', monospace; -fx-font-size: 12.5; -fx-control-inner-background: #0c1220; -fx-text-fill: #38bdf8; -fx-background-radius: 12; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
+        logArea.setStyle("-fx-font-family: 'Consolas', monospace; -fx-font-size: 12.5; -fx-control-inner-background: #082337; -fx-text-fill: #5eead4; -fx-background-radius: 12; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
         VBox.setVgrow(logArea, Priority.ALWAYS);
 
         box.getChildren().addAll(headerRow, logArea);
@@ -862,7 +862,7 @@ public class ServerApp extends Application {
         HBox.setHgrow(sp, Priority.ALWAYS);
 
         liveJsonMeta = new Label("0 JSON responses");
-        liveJsonMeta.setStyle("-fx-text-fill: " + C_ACCENT + "; -fx-font-weight: bold; -fx-font-size: 12; -fx-background-color: #eff6ff; -fx-background-radius: 16; -fx-padding: 6 14 6 14; -fx-border-color: #bfdbfe; -fx-border-radius: 16; -fx-border-width: 1;");
+        liveJsonMeta.setStyle("-fx-text-fill: " + C_ACCENT + "; -fx-font-weight: bold; -fx-font-size: 12; -fx-background-color: #edf5f9; -fx-background-radius: 16; -fx-padding: 6 14 6 14; -fx-border-color: #b9d5e2; -fx-border-radius: 16; -fx-border-width: 1;");
 
         liveJsonAutoScroll = new CheckBox("Auto scroll");
         liveJsonAutoScroll.setSelected(true);
@@ -891,7 +891,7 @@ public class ServerApp extends Application {
         liveJsonArea.setEditable(false);
         liveJsonArea.setWrapText(false);
         liveJsonArea.setStyle("-fx-font-family: 'Consolas', monospace; -fx-font-size: 12.5; " +
-            "-fx-control-inner-background: #0b1220; -fx-text-fill: #7dd3fc; " +
+            "-fx-control-inner-background: #082337; -fx-text-fill: #5eead4; " +
             "-fx-background-radius: 12; -fx-border-color: " + C_BORDER + "; " +
             "-fx-border-radius: 12; -fx-border-width: 1;");
         VBox.setVgrow(liveJsonArea, Priority.ALWAYS);
@@ -923,7 +923,7 @@ public class ServerApp extends Application {
         HBox.setHgrow(sp, Priority.ALWAYS);
 
         Label countLbl = new Label("29 endpoints");
-        countLbl.setStyle("-fx-text-fill: " + C_BLUE + "; -fx-font-weight: bold; -fx-font-size: 12; -fx-background-color: #dbeafe; -fx-background-radius: 16; -fx-padding: 6 14 6 14; -fx-border-color: #93c5fd; -fx-border-radius: 16; -fx-border-width: 1;");
+        countLbl.setStyle("-fx-text-fill: " + C_BLUE + "; -fx-font-weight: bold; -fx-font-size: 12; -fx-background-color: #dceaf1; -fx-background-radius: 16; -fx-padding: 6 14 6 14; -fx-border-color: #99f6e4; -fx-border-radius: 16; -fx-border-width: 1;");
 
         headerRow.getChildren().addAll(title, sp, countLbl);
 
@@ -1015,7 +1015,7 @@ public class ServerApp extends Application {
         row.setAlignment(Pos.CENTER_LEFT);
         row.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 10; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 6, 0, 0, 2);");
 
-        row.setOnMouseEntered(e -> row.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 10; -fx-border-color: " + C_ACCENT + "; -fx-border-radius: 10; -fx-border-width: 1.5; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.2), 10, 0, 0, 3);"));
+        row.setOnMouseEntered(e -> row.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 10; -fx-border-color: " + C_ACCENT + "; -fx-border-radius: 10; -fx-border-width: 1.5; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.18), 10, 0, 0, 3);"));
         row.setOnMouseExited(e -> row.setStyle("-fx-background-color: " + C_CARD + "; -fx-background-radius: 10; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 6, 0, 0, 2);"));
 
         Label methodLbl = new Label(method);
@@ -1123,7 +1123,7 @@ public class ServerApp extends Application {
         sendBtn.setGraphic(sendIcn);
         sendBtn.setPrefHeight(44);
         sendBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        sendBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 24 0 24; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.4), 12, 0, 0, 4);");
+        sendBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 24 0 24; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.35), 12, 0, 0, 4);");
         sendBtn.setOnAction(e -> doSendTest());
 
         Button clearBtn = new Button("  Clear");
@@ -1159,7 +1159,7 @@ public class ServerApp extends Application {
         rawRequestArea = new TextArea();
         rawRequestArea.setEditable(false);
         rawRequestArea.setPrefHeight(220);
-        rawRequestArea.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 11.5; -fx-control-inner-background: #0c1220; -fx-text-fill: #60a5fa; -fx-background-radius: 10; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1;");
+        rawRequestArea.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 11.5; -fx-control-inner-background: #082337; -fx-text-fill: #5eead4; -fx-background-radius: 10; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1;");
 
         reqCard.getChildren().addAll(reqTitle, rawRequestArea);
 
@@ -1175,7 +1175,7 @@ public class ServerApp extends Application {
         rawResponseArea = new TextArea();
         rawResponseArea.setEditable(false);
         rawResponseArea.setPrefHeight(220);
-        rawResponseArea.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 11.5; -fx-control-inner-background: #0c1220; -fx-text-fill: #38bdf8; -fx-background-radius: 10; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1;");
+        rawResponseArea.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 11.5; -fx-control-inner-background: #082337; -fx-text-fill: #5eead4; -fx-background-radius: 10; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1;");
 
         resCard.getChildren().addAll(resTitle, rawResponseArea);
 
@@ -1317,7 +1317,7 @@ public class ServerApp extends Application {
         applyBtn.setGraphic(applyIcn);
         applyBtn.setPrefHeight(44);
         applyBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        applyBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 24 0 24; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.4), 12, 0, 0, 4);");
+        applyBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 0 24 0 24; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.35), 12, 0, 0, 4);");
         applyBtn.setOnAction(e -> {
             log("⚙️ Cấu hình HTTP/1.1 đã được cập nhật:");
             log("   • Keep-Alive: " + (keepAliveCheck.isSelected() ? "ON" : "OFF"));
@@ -1476,7 +1476,7 @@ public class ServerApp extends Application {
         rIcn.setIconColor(Color.web(C_ACCENT));
         refreshBtn.setGraphic(rIcn);
         refreshBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        refreshBtn.setStyle("-fx-background-color: #eff6ff; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 10 20 10 20; -fx-border-color: #bfdbfe; -fx-border-radius: 8; -fx-border-width: 1;");
+        refreshBtn.setStyle("-fx-background-color: #edf5f9; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 10 20 10 20; -fx-border-color: #b9d5e2; -fx-border-radius: 8; -fx-border-width: 1;");
         refreshBtn.setOnAction(e -> refreshClientTable());
 
         box.getChildren().addAll(headerRow, clientTable, refreshBtn);
@@ -1602,7 +1602,7 @@ public class ServerApp extends Application {
                     startBtn.setStyle("-fx-background-color: " + C_CARD2 + "; -fx-text-fill: " + C_MUTED + "; -fx-background-radius: 10; -fx-cursor: not-allowed; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 10; -fx-border-width: 1;");
 
                     stopBtn.setDisable(false);
-                    stopBtn.setStyle("-fx-background-color: " + C_RED + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(220,38,38,0.4), 12, 0, 0, 4);");
+                    stopBtn.setStyle("-fx-background-color: " + C_RED + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(185,28,28,0.35), 12, 0, 0, 4);");
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> log("❌ Lỗi start: " + e.getMessage()));

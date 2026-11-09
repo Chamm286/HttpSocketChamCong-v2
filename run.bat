@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 
-echo [1/4] Kiem tra Java...
+echo [1/5] Kiem tra Java...
 java -version >nul 2>&1
 if errorlevel 1 (
     echo Khong tim thay java. Hay cai JDK 21 va them vao PATH.
@@ -10,7 +10,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [2/4] Bien dich toan bo source (Server + Client)...
+echo [2/5] Bien dich toan bo source (Server + Client)...
 if not exist bin mkdir bin
 dir /s /b src\*.java > sources.txt
 javac -encoding UTF-8 -d bin ^
@@ -24,7 +24,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [3/4] Khoi dong HTTP Socket Server (port 2020) trong cua so rieng...
+echo [3/5] Khoi dong HTTP Socket Server (port 2020) trong cua so rieng...
 start "ChamCong ServerApp" cmd /k java --module-path "lib\javafx-sdk-21.0.5\lib" --add-modules javafx.controls,javafx.fxml -cp "bin;lib\mysql-connector-j-26.7.0.jar;lib\ikonli-core-12.3.1.jar;lib\ikonli-javafx-12.3.1.jar;lib\ikonli-fontawesome5-pack-12.3.1.jar;lib\ikonli-fontawesome-pack-12.3.1.jar" com.httpchamcong.server.ServerApp --autostart
 
 echo Doi server khoi dong (toi da 15 giay)...
@@ -35,10 +35,12 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [4/4] Mo giao dien Web tren trinh duyet...
+echo [4/5] Khoi dong JavaFX Desktop Client...
+start "ChamCong Desktop Client" cmd /k java --module-path "lib\javafx-sdk-21.0.5\lib" --add-modules javafx.controls,javafx.fxml -cp "bin;lib\mysql-connector-j-26.7.0.jar;lib\ikonli-core-12.3.1.jar;lib\ikonli-javafx-12.3.1.jar;lib\ikonli-fontawesome5-pack-12.3.1.jar;lib\ikonli-fontawesome-pack-12.3.1.jar" com.httpchamcong.client.ClientApp
+
+echo [5/5] Mo Web Client tren trinh duyet...
 start "" "http://localhost:2020/"
 
 echo Hoan tat. Server dang chay o http://localhost:2020/
-echo Neu can chay JavaFX Client thay vi Web, dung lenh:
-echo java --module-path "lib\javafx-sdk-21.0.5\lib" --add-modules javafx.controls,javafx.fxml -cp "bin;lib\mysql-connector-j-26.7.0.jar;lib\ikonli-core-12.3.1.jar;lib\ikonli-javafx-12.3.1.jar;lib\ikonli-fontawesome5-pack-12.3.1.jar;lib\ikonli-fontawesome-pack-12.3.1.jar" com.httpchamcong.client.ClientApp
+echo Web Client: trinh duyet | Desktop Client: JavaFX
 pause

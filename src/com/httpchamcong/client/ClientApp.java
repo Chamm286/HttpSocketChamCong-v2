@@ -49,25 +49,25 @@ public class ClientApp extends Application {
     private int currentPage = 1;
     private int pageLimit = 10;
 
-    // ===== PALETTE — CYAN/TEAL (Không tím) =====
-    private static final String C_BG       = "#f0f9ff";   // Nền xanh rất nhạt
+    // ===== PALETTE — ENTERPRISE NAVY / TEAL / GOLD =====
+    private static final String C_BG       = "#eef6f8";   // Nền xanh rất nhạt
     private static final String C_CARD     = "#ffffff";
     private static final String C_CARD2    = "#f8fafc";
     private static final String C_BORDER   = "#cbd5e1";   // Viền đậm hơn
-    private static final String C_TEXT     = "#0c1220";   // Đen đậm rõ
+    private static final String C_TEXT     = "#082337";   // Đen đậm rõ
     private static final String C_TEXT2    = "#1e293b";   // Đậm hơn
     private static final String C_MUTED    = "#475569";   // Rõ hơn
     private static final String C_INPUT_BG = "#ffffff";
     private static final String C_PROMPT   = "#94a3b8";
-    private static final String C_ACCENT   = "#0891b2";   // Cyan-600
-    private static final String C_ACCENT2  = "#0e7490";   // Cyan-700
+    private static final String C_ACCENT   = "#0f4c75";   // Enterprise navy
+    private static final String C_ACCENT2  = "#0b3b5c";   // Deep navy
     private static final String C_GREEN    = "#059669";   // Emerald-600
-    private static final String C_ORANGE   = "#ea580c";   // Orange-600
-    private static final String C_BLUE     = "#2563eb";   // Blue-600
-    private static final String C_VIOLET   = "#0284c7";   // Sky-600 (khong dung tim)
+    private static final String C_ORANGE   = "#b45309";   // Orange-600
+    private static final String C_BLUE     = "#0f766e";   // Teal
+    private static final String C_SKY      = "#0f766e";   // Teal accent
     private static final String C_RED      = "#dc2626";   // Red-600
-    private static final String C_TEAL     = "#0d9488";   // Teal-600
-    private static final String C_AMBER    = "#d97706";   // Amber-600
+    private static final String C_TEAL     = "#0f766e";   // Teal-600
+    private static final String C_AMBER    = "#b45309";   // Amber-600
 
     private static final String INPUT_STYLE =
         "-fx-background-color: " + C_INPUT_BG + "; " +
@@ -158,7 +158,7 @@ public class ClientApp extends Application {
             ".table-view .table-cell { -fx-text-fill: " + C_TEXT + "; -fx-border-color: transparent " + C_BORDER + " transparent transparent; -fx-padding: 10 12 10 12; -fx-alignment: center-left; -fx-font-size: 12.5; }" +
             ".table-view .table-row-cell { -fx-background-color: " + C_INPUT_BG + "; -fx-cell-size: 46; -fx-border-color: transparent transparent " + C_BORDER + " transparent; -fx-border-width: 0 0 1 0; }" +
             ".table-view .table-row-cell:odd { -fx-background-color: " + C_BG + "; }" +
-            ".table-view .table-row-cell:hover { -fx-background-color: #e0f2fe; }" +
+            ".table-view .table-row-cell:hover { -fx-background-color: #e4f0f2; }" +
             ".table-view .table-row-cell:selected { -fx-background-color: " + C_ACCENT + "22; }" +
             ".table-view .table-row-cell:selected .table-cell { -fx-text-fill: " + C_TEXT + "; }" +
             ".scroll-pane { -fx-background-color: transparent; }" +
@@ -184,7 +184,7 @@ public class ClientApp extends Application {
     @Override
     public void start(Stage stage) {
         this.primaryStage = stage;
-        stage.setTitle("Hệ thống Chấm công");
+        stage.setTitle("Chamnee Attendance - Hệ thống Chấm công");
         showLogin();
         stage.show();
 
@@ -208,7 +208,7 @@ public class ClientApp extends Application {
     // ============================================================
     private void showLogin() {
         StackPane root = new StackPane();
-        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #ecfeff, #f0f9ff, #f0fdfa);");
+        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #eef8f8, #eef6f8, #eef8f5);");
 
         VBox card = new VBox(0);
         card.setMaxWidth(440);
@@ -219,7 +219,7 @@ public class ClientApp extends Application {
             "-fx-border-color: " + C_BORDER + "; " +
             "-fx-border-radius: 20; " +
             "-fx-border-width: 1; " +
-            "-fx-effect: dropshadow(gaussian, rgba(8,145,178,0.18), 50, 0, 0, 20);"
+            "-fx-effect: dropshadow(gaussian, rgba(15,76,117,0.15), 50, 0, 0, 20);"
         );
 
         VBox header = new VBox(12);
@@ -229,7 +229,7 @@ public class ClientApp extends Application {
         StackPane logoCircle = new StackPane();
         logoCircle.setPrefSize(80, 80);
         logoCircle.setMaxSize(80, 80);
-        logoCircle.setStyle("-fx-background-color: linear-gradient(to bottom right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 40; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.5), 16, 0, 0, 6);");
+        logoCircle.setStyle("-fx-background-color: linear-gradient(to bottom right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 40; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.45), 16, 0, 0, 6);");
 
         FontIcon logoIcon = new FontIcon(FontAwesomeSolid.CLOCK);
         logoIcon.setIconSize(36);
@@ -248,7 +248,7 @@ public class ClientApp extends Application {
         HBox serverBox = new HBox(8);
         serverBox.setAlignment(Pos.CENTER);
         serverBox.setPadding(new Insets(8, 16, 8, 16));
-        serverBox.setStyle("-fx-background-color: #ecfeff; -fx-background-radius: 16; -fx-border-color: #a5f3fc; -fx-border-radius: 16; -fx-border-width: 1;");
+        serverBox.setStyle("-fx-background-color: #eef8f8; -fx-background-radius: 16; -fx-border-color: #c9e7e4; -fx-border-radius: 16; -fx-border-width: 1;");
 
         FontIcon serverIcn = new FontIcon(FontAwesomeSolid.SERVER);
         serverIcn.setIconSize(12);
@@ -299,7 +299,7 @@ public class ClientApp extends Application {
         passIcon.setIconColor(Color.web(C_MUTED));
 
         passField = new PasswordField();
-        passField.setText("Nhanvien@2025");
+        passField.setText("12345678");
         passField.setFont(Font.font("Segoe UI", 14));
         passField.setStyle("-fx-background-color: transparent; -fx-text-fill: " + C_TEXT + "; -fx-prompt-text-fill: " + C_PROMPT + "; -fx-highlight-fill: " + C_ACCENT + "; -fx-highlight-text-fill: white;");
         HBox.setHgrow(passField, Priority.ALWAYS);
@@ -333,9 +333,9 @@ public class ClientApp extends Application {
         loginBtn.setPrefHeight(48);
         loginBtn.setMaxWidth(Double.MAX_VALUE);
         loginBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        loginBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.4), 12, 0, 0, 4);");
-        loginBtn.setOnMouseEntered(e -> loginBtn.setStyle("-fx-background-color: " + C_ACCENT2 + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.55), 16, 0, 0, 6);"));
-        loginBtn.setOnMouseExited(e -> loginBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.4), 12, 0, 0, 4);"));
+        loginBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.35), 12, 0, 0, 4);");
+        loginBtn.setOnMouseEntered(e -> loginBtn.setStyle("-fx-background-color: " + C_ACCENT2 + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.50), 16, 0, 0, 6);"));
+        loginBtn.setOnMouseExited(e -> loginBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.35), 12, 0, 0, 4);"));
         loginBtn.setOnAction(e -> doLogin());
 
         Button registerBtn = new Button("CHƯA CÓ TÀI KHOẢN? ĐĂNG KÝ");
@@ -361,11 +361,11 @@ public class ClientApp extends Application {
         h1.setFont(Font.font("Segoe UI", FontWeight.BOLD, 10));
         h1.setTextFill(Color.web(C_MUTED));
 
-        Label h2 = new Label("👤 pvkhai / Nhanvien@2025");
+        Label h2 = new Label("👤 pvkhai / 12345678");
         h2.setFont(Font.font("Consolas", 11));
         h2.setTextFill(Color.web(C_MUTED));
 
-        Label h3 = new Label("👑 admin  / Admin@2025");
+        Label h3 = new Label("👑 Chamnee / 12345678");
         h3.setFont(Font.font("Consolas", 11));
         h3.setTextFill(Color.web(C_MUTED));
 
@@ -486,7 +486,7 @@ public class ClientApp extends Application {
         StackPane logoCircle = new StackPane();
         logoCircle.setPrefSize(42, 42);
         logoCircle.setMaxSize(42, 42);
-        logoCircle.setStyle("-fx-background-color: linear-gradient(to bottom right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 21; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.45), 8, 0, 0, 3);");
+        logoCircle.setStyle("-fx-background-color: linear-gradient(to bottom right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 21; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.40), 8, 0, 0, 3);");
         FontIcon logoIcon = new FontIcon(FontAwesomeSolid.CLOCK);
         logoIcon.setIconSize(20);
         logoIcon.setIconColor(Color.WHITE);
@@ -496,7 +496,7 @@ public class ClientApp extends Application {
         Label lt1 = new Label("CHẤM CÔNG");
         lt1.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
         lt1.setTextFill(Color.web(C_TEXT));
-        Label lt2 = new Label("Online System");
+        Label lt2 = new Label("Enterprise Attendance");
         lt2.setFont(Font.font("Segoe UI", 10));
         lt2.setTextFill(Color.web(C_MUTED));
         logoText.getChildren().addAll(lt1, lt2);
@@ -633,7 +633,7 @@ public class ClientApp extends Application {
         HBox clockBox = new HBox(8);
         clockBox.setAlignment(Pos.CENTER);
         clockBox.setPadding(new Insets(9, 18, 9, 18));
-        clockBox.setStyle("-fx-background-color: #ecfeff; -fx-background-radius: 20; -fx-border-color: #a5f3fc; -fx-border-radius: 20; -fx-border-width: 1;");
+        clockBox.setStyle("-fx-background-color: #eef8f8; -fx-background-radius: 20; -fx-border-color: #c9e7e4; -fx-border-radius: 20; -fx-border-width: 1;");
 
         FontIcon clockIcn = new FontIcon(FontAwesomeSolid.CLOCK);
         clockIcn.setIconSize(13);
@@ -710,7 +710,7 @@ public class ClientApp extends Application {
             }
         }
         if (btn == null) { activeBtn = null; return; }
-        btn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.4), 8, 0, 0, 2);");
+        btn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.35), 8, 0, 0, 2);");
         if (btn.getGraphic() instanceof FontIcon) {
             ((FontIcon) btn.getGraphic()).setIconColor(Color.WHITE);
         }
@@ -729,7 +729,7 @@ public class ClientApp extends Application {
         welcome.setPadding(new Insets(32, 36, 32, 36));
         welcome.setAlignment(Pos.CENTER_LEFT);
         welcome.setMaxWidth(Double.MAX_VALUE);
-        welcome.setStyle("-fx-background-color: linear-gradient(to right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 18; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.4), 20, 0, 0, 8);");
+        welcome.setStyle("-fx-background-color: linear-gradient(to right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 18; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.35), 20, 0, 0, 8);");
 
         VBox info = new VBox(10);
         Label greet = new Label("Xin chào, " + fullName + "! 👋");
@@ -738,7 +738,7 @@ public class ClientApp extends Application {
 
         Label date = new Label(getTodayString());
         date.setFont(Font.font("Segoe UI", 15));
-        date.setTextFill(Color.web("#cffafe"));
+        date.setTextFill(Color.web("#d7f0ec"));
 
         info.getChildren().addAll(greet, date);
 
@@ -795,7 +795,7 @@ public class ClientApp extends Application {
             () -> { setActive(attendanceBtn); showAttendance(); });
         VBox f2 = bigCard(FontAwesomeSolid.HISTORY, "LỊCH SỬ", "Xem chấm công", C_BLUE,
             () -> { setActive(null); showHistory(); });
-        VBox f3 = bigCard(FontAwesomeSolid.CHART_BAR, "THỐNG KÊ", "Số liệu cá nhân", C_VIOLET,
+        VBox f3 = bigCard(FontAwesomeSolid.CHART_BAR, "THỐNG KÊ", "Số liệu cá nhân", C_SKY,
             () -> { setActive(null); showStats(); });
 
         HBox.setHgrow(f1, Priority.ALWAYS);
@@ -927,12 +927,12 @@ public class ClientApp extends Application {
         HBox hero = new HBox(28);
         hero.setPadding(new Insets(28, 32, 28, 32));
         hero.setAlignment(Pos.CENTER_LEFT);
-        hero.setStyle("-fx-background-color: linear-gradient(to right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 18; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.35), 20, 0, 0, 8);");
+        hero.setStyle("-fx-background-color: linear-gradient(to right, " + C_ACCENT + ", " + C_TEAL + "); -fx-background-radius: 18; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.30), 20, 0, 0, 8);");
 
         VBox heroLeft = new VBox(9);
         Label heroDate = new Label(getTodayString());
         heroDate.setFont(Font.font("Segoe UI", 14));
-        heroDate.setTextFill(Color.web("#cffafe"));
+        heroDate.setTextFill(Color.web("#d7f0ec"));
 
         Label heroStatus = new Label("ĐANG TẢI...");
         heroStatus.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
@@ -942,7 +942,7 @@ public class ClientApp extends Application {
 
         Label heroHint = new Label("Đang kiểm tra trạng thái chấm công của bạn...");
         heroHint.setFont(Font.font("Segoe UI", 13));
-        heroHint.setTextFill(Color.web("#e0f2fe"));
+        heroHint.setTextFill(Color.web("#e4f0f2"));
         heroHint.setWrapText(true);
         heroLeft.getChildren().addAll(heroDate, heroStatus, heroHint);
 
@@ -956,7 +956,7 @@ public class ClientApp extends Application {
         bigClock.setTextFill(Color.WHITE);
         Label clockNote = new Label("Giờ máy chủ: --:--:--");
         clockNote.setFont(Font.font("Consolas", 11));
-        clockNote.setTextFill(Color.web("#cffafe"));
+        clockNote.setTextFill(Color.web("#d7f0ec"));
         clockBox.getChildren().addAll(bigClock, clockNote);
 
         hero.getChildren().addAll(heroLeft, heroSp, clockBox);
@@ -1011,7 +1011,7 @@ public class ClientApp extends Application {
         ruleCard.setPrefWidth(360);
         ruleCard.setMinWidth(320);
         ruleCard.setPadding(new Insets(24, 26, 24, 26));
-        ruleCard.setStyle("-fx-background-color: #f0fdfa; -fx-background-radius: 16; -fx-border-color: #99f6e4; -fx-border-radius: 16; -fx-border-width: 1;");
+        ruleCard.setStyle("-fx-background-color: #eef8f5; -fx-background-radius: 16; -fx-border-color: #99f6e4; -fx-border-radius: 16; -fx-border-width: 1;");
 
         Label ruleTitle = new Label("📌 Quy tắc chấm công");
         ruleTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
@@ -1375,7 +1375,7 @@ public class ClientApp extends Application {
         btn.setPrefHeight(50);
         btn.setMaxWidth(Double.MAX_VALUE);
         btn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        btn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.4), 12, 0, 0, 4);");
+        btn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.35), 12, 0, 0, 4);");
 
         Label result = new Label("");
         result.setFont(Font.font("Consolas", 13));
@@ -1497,7 +1497,7 @@ public class ClientApp extends Application {
         sendBtn.setPrefHeight(50);
         sendBtn.setMaxWidth(Double.MAX_VALUE);
         sendBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        sendBtn.setStyle("-fx-background-color: " + C_ORANGE + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(234,88,12,0.4), 12, 0, 0, 4);");
+        sendBtn.setStyle("-fx-background-color: " + C_ORANGE + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(180,83,9,0.35), 12, 0, 0, 4);");
 
         Label result = new Label("");
         result.setFont(Font.font("Consolas", 13));
@@ -1687,7 +1687,7 @@ public class ClientApp extends Application {
         submitBtn.setPrefHeight(50);
         submitBtn.setMaxWidth(Double.MAX_VALUE);
         submitBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        submitBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.4), 12, 0, 0, 4);");
+        submitBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.35), 12, 0, 0, 4);");
 
         Label result = new Label("");
         result.setFont(Font.font("Consolas", 13));
@@ -1762,7 +1762,7 @@ public class ClientApp extends Application {
                     setText(item);
                     if ("SANG".equals(item)) setStyle("-fx-text-fill: " + C_ORANGE + "; -fx-font-weight: bold;");
                     else if ("CHIEU".equals(item)) setStyle("-fx-text-fill: " + C_BLUE + "; -fx-font-weight: bold;");
-                    else if ("TOI".equals(item)) setStyle("-fx-text-fill: " + C_VIOLET + "; -fx-font-weight: bold;");
+                    else if ("TOI".equals(item)) setStyle("-fx-text-fill: " + C_SKY + "; -fx-font-weight: bold;");
                 }
             }
         });
@@ -1902,7 +1902,7 @@ public class ClientApp extends Application {
         saveBtn.setPrefHeight(50);
         saveBtn.setMaxWidth(Double.MAX_VALUE);
         saveBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        saveBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(8,145,178,0.4), 12, 0, 0, 4);");
+        saveBtn.setStyle("-fx-background-color: " + C_ACCENT + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(15,76,117,0.35), 12, 0, 0, 4);");
 
         Label result = new Label("");
         result.setFont(Font.font("Consolas", 13));
@@ -2048,7 +2048,7 @@ public class ClientApp extends Application {
         Label countLbl = new Label("⏳ Đang tải...");
         countLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         countLbl.setTextFill(Color.web(C_ACCENT));
-        countLbl.setStyle("-fx-background-color: #ecfeff; -fx-background-radius: 20; -fx-padding: 8 18 8 18; -fx-border-color: #a5f3fc; -fx-border-radius: 20; -fx-border-width: 1;");
+        countLbl.setStyle("-fx-background-color: #eef8f8; -fx-background-radius: 20; -fx-padding: 8 18 8 18; -fx-border-color: #c9e7e4; -fx-border-radius: 20; -fx-border-width: 1;");
 
         Button refresh = new Button("  Làm mới");
         FontIcon rIcn = new FontIcon(FontAwesomeSolid.SYNC_ALT);
@@ -2056,7 +2056,7 @@ public class ClientApp extends Application {
         rIcn.setIconColor(Color.web(C_ACCENT));
         refresh.setGraphic(rIcn);
         refresh.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-        refresh.setStyle("-fx-background-color: #ecfeff; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 16 8 16; -fx-border-color: #a5f3fc; -fx-border-radius: 8; -fx-border-width: 1;");
+        refresh.setStyle("-fx-background-color: #eef8f8; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 16 8 16; -fx-border-color: #c9e7e4; -fx-border-radius: 8; -fx-border-width: 1;");
         refresh.setOnAction(e -> showAllNotes());
 
         hdr.getChildren().addAll(title, sp, countLbl, refresh);
@@ -2187,7 +2187,7 @@ public class ClientApp extends Application {
         Label countLbl = new Label("⏳ Đang tải...");
         countLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         countLbl.setTextFill(Color.web(C_ACCENT));
-        countLbl.setStyle("-fx-background-color: #ecfeff; -fx-background-radius: 20; -fx-padding: 8 18 8 18; -fx-border-color: #a5f3fc; -fx-border-radius: 20; -fx-border-width: 1;");
+        countLbl.setStyle("-fx-background-color: #eef8f8; -fx-background-radius: 20; -fx-padding: 8 18 8 18; -fx-border-color: #c9e7e4; -fx-border-radius: 20; -fx-border-width: 1;");
 
         Button refresh = new Button("  Làm mới");
         FontIcon rIcn = new FontIcon(FontAwesomeSolid.SYNC_ALT);
@@ -2195,7 +2195,7 @@ public class ClientApp extends Application {
         rIcn.setIconColor(Color.web(C_ACCENT));
         refresh.setGraphic(rIcn);
         refresh.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-        refresh.setStyle("-fx-background-color: #ecfeff; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 16 8 16; -fx-border-color: #a5f3fc; -fx-border-radius: 8; -fx-border-width: 1;");
+        refresh.setStyle("-fx-background-color: #eef8f8; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 16 8 16; -fx-border-color: #c9e7e4; -fx-border-radius: 8; -fx-border-width: 1;");
         refresh.setOnAction(e -> showShiftManagement());
 
         hdr.getChildren().addAll(title, sp, countLbl, refresh);
@@ -2267,7 +2267,7 @@ public class ClientApp extends Application {
                     setText(item);
                     if ("SANG".equals(item)) setStyle("-fx-text-fill: " + C_ORANGE + "; -fx-font-weight: bold;");
                     else if ("CHIEU".equals(item)) setStyle("-fx-text-fill: " + C_BLUE + "; -fx-font-weight: bold;");
-                    else if ("TOI".equals(item)) setStyle("-fx-text-fill: " + C_VIOLET + "; -fx-font-weight: bold;");
+                    else if ("TOI".equals(item)) setStyle("-fx-text-fill: " + C_SKY + "; -fx-font-weight: bold;");
                 }
             }
         });
@@ -2426,7 +2426,7 @@ public class ClientApp extends Application {
         rIcn.setIconColor(Color.web(C_ACCENT));
         refresh.setGraphic(rIcn);
         refresh.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-        refresh.setStyle("-fx-background-color: #ecfeff; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 16 8 16; -fx-border-color: #a5f3fc; -fx-border-radius: 8; -fx-border-width: 1;");
+        refresh.setStyle("-fx-background-color: #eef8f8; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 16 8 16; -fx-border-color: #c9e7e4; -fx-border-radius: 8; -fx-border-width: 1;");
         refresh.setOnAction(e -> showUserManagement());
 
         hdr.getChildren().addAll(title, sp, addBtn, refresh);
@@ -2471,7 +2471,7 @@ public class ClientApp extends Application {
 
                 Button editBtn = new Button("Sửa");
                 editBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
-                editBtn.setStyle("-fx-background-color: #eff6ff; -fx-text-fill: " + C_BLUE + "; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 5 12 5 12; -fx-border-color: #bfdbfe; -fx-border-radius: 6; -fx-border-width: 1;");
+                editBtn.setStyle("-fx-background-color: #edf5f9; -fx-text-fill: " + C_BLUE + "; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 5 12 5 12; -fx-border-color: #b9d5e2; -fx-border-radius: 6; -fx-border-width: 1;");
                 editBtn.setOnAction(e -> showEditUserDialog(row));
 
                 Button delBtn = new Button("Xóa");
@@ -2701,7 +2701,7 @@ public class ClientApp extends Application {
         rIcn.setIconColor(Color.web(C_ACCENT));
         refresh.setGraphic(rIcn);
         refresh.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-        refresh.setStyle("-fx-background-color: #ecfeff; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 16 8 16; -fx-border-color: #a5f3fc; -fx-border-radius: 8; -fx-border-width: 1;");
+        refresh.setStyle("-fx-background-color: #eef8f8; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 16 8 16; -fx-border-color: #c9e7e4; -fx-border-radius: 8; -fx-border-width: 1;");
         refresh.setOnAction(e -> showLeaveManagement());
 
         hdr.getChildren().addAll(title, sp, refresh);
@@ -3182,7 +3182,7 @@ public class ClientApp extends Application {
         Label countLbl = new Label("⏳ Đang tải...");
         countLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         countLbl.setTextFill(Color.web(C_ACCENT));
-        countLbl.setStyle("-fx-background-color: #ecfeff; -fx-background-radius: 20; -fx-padding: 8 18 8 18; -fx-border-color: #a5f3fc; -fx-border-radius: 20; -fx-border-width: 1;");
+        countLbl.setStyle("-fx-background-color: #eef8f8; -fx-background-radius: 20; -fx-padding: 8 18 8 18; -fx-border-color: #c9e7e4; -fx-border-radius: 20; -fx-border-width: 1;");
 
         Button refresh = new Button("  Làm mới");
         FontIcon rIcn = new FontIcon(FontAwesomeSolid.SYNC_ALT);
@@ -3190,7 +3190,7 @@ public class ClientApp extends Application {
         rIcn.setIconColor(Color.web(C_ACCENT));
         refresh.setGraphic(rIcn);
         refresh.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-        refresh.setStyle("-fx-background-color: #ecfeff; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 16 8 16; -fx-border-color: #a5f3fc; -fx-border-radius: 8; -fx-border-width: 1;");
+        refresh.setStyle("-fx-background-color: #eef8f8; -fx-text-fill: " + C_ACCENT + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 16 8 16; -fx-border-color: #c9e7e4; -fx-border-radius: 8; -fx-border-width: 1;");
         refresh.setOnAction(e -> showAdmin());
 
         hdr.getChildren().addAll(title, sp, countLbl, refresh);
